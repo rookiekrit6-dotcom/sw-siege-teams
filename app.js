@@ -19,7 +19,6 @@
     try { return new Date(bkk(iso)).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "Asia/Bangkok" }); }
     catch (e) { return iso; }
   };
-  const popText = (p) => (!p ? "" : /^[\d.,]+[KkMm]?$/.test(p) ? `ใช้ ${p}` : p);
   const monHTML = (k, extra) => {
     const m = MON[k];
     return `<span class="m" style="--c:${monColor(k)}"><img src="${esc(m ? m.img : "")}" alt="" width="52" height="52" loading="lazy" decoding="async">${esc(monName(k))}${extra ? `<b class="spd-tag">${esc(extra)}</b>` : ""}</span>`;
@@ -106,14 +105,13 @@
   function teamHTML(t) {
     const rk = t.rank ? `<span class="rk">${t.rank}</span>` : `<span class="rk g">กิลด์</span>`;
     const mons = `<span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span>`;
-    const pop = t.pop ? `<span class="pop" title="ความนิยมจาก SWLens">${esc(popText(t.pop))}</span>` : "";
     const mus = musFor(t);
-    if (!mus.length) return `<article class="team" id="t-${esc(t.id)}"><div class="head">${rk}${mons}<span class="badges">${pop}</span></div></article>`;
+    if (!mus.length) return `<article class="team" id="t-${esc(t.id)}"><div class="head">${rk}${mons}</div></article>`;
     const open = state.open.has(t.id);
     const label = t.side === "atk" ? `ตีได้ ${mus.length} ทีม` : `มีทีมแก้ ${mus.length} ทีม`;
     return `<article class="team has" id="t-${esc(t.id)}">
       <button type="button" class="head" data-team="${esc(t.id)}" aria-expanded="${open}" aria-controls="det-${esc(t.id)}">${rk}${mons}
-        <span class="badges"><span class="tag">${label}</span>${isNew(t.newest) ? '<span class="new">ใหม่</span>' : ""}${pop}</span></button>
+        <span class="badges"><span class="tag">${label}</span>${isNew(t.newest) ? '<span class="new">ใหม่</span>' : ""}</span></button>
       ${open ? detailHTML(t) : ""}</article>`;
   }
 
