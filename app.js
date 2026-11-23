@@ -118,7 +118,9 @@
       x._def = reg.def.get(keyOf(x.def));
     }
     const B4 = new Set(ranked.base4 || []);
+    const B4A = new Set(ranked.base4_atk || []);
     for (const t of reg.def.values()) t.base = B4.has(keyOf(t.m)) ? "4" : "5";
+    for (const t of reg.atk.values()) t.base = B4A.has(keyOf(t.m)) ? "4" : "5";
     for (const x of mu.matchups) x.base = x._def.base;
     BY_ID = {};
     for (const side of ["def", "atk"]) {
@@ -139,12 +141,12 @@
     SEASONS = [...new Set(mu.matchups.map((x) => x.season).filter(Boolean))].sort().reverse();
   }
 
-  const musFor = (t) => t.mus.filter((x) => (!state.season || x.season === state.season) && (!state.base || x.base === state.base));
+  const musFor = (t) => (state.season ? t.mus.filter((x) => x.season === state.season) : t.mus);
 
   /* ---------- filtering ---------- */
   function baseFilter(t, ignorePick) {
     const mus = musFor(t);
-    if (state.base && (t.side === "def" ? t.base !== state.base : !mus.length)) return false;
+    if (state.base && t.base !== state.base) return false;
     if (state.data === "with" && !mus.length) return false;
     if (state.data === "without" && t.mus.length) return false;
     if (state.data === "mine" && !(BOX && (t.side === "atk" ? mus.length && ownsAll(t.m) : mus.some((x) => ownsAll(x.atk))))) return false;
@@ -204,7 +206,7 @@
   }
 
   function teamHTML(t) {
-    const rk = `<span class="rk">${t.rank}${t.side === "def" && t.base === "4" ? '<small class="b4">4★</small>' : ""}</span>`;
+    const rk = `<span class="rk">${t.rank}${t.base === "4" ? '<small class="b4">4★</small>' : ""}</span>`;
     const mons = `<span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span>`;
     const mus = musFor(t);
     const open = state.open.has(t.id);
