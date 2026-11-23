@@ -153,3 +153,11 @@ button.head[aria-expanded="true"] .rk::after{content:"▾"}
 .my-sum.ok{color:#fff;background:#2e7d4f}.my-sum.no{color:#c0392b;border:1px solid #c0392b}
 @media (prefers-color-scheme:dark){.my-tag.ok{color:#6fd39a}.my-tag.low,.my-tag.no{color:#ff8a7a}.my-sum.no{color:#ff8a7a;border-color:#ff8a7a}}
 @media (max-width:420px){.box-btn{padding:0 8px;font-size:.8rem}.submit{font-size:.8rem}}
+
+.box-or{text-align:center;color:var(--mute);font-size:.8rem;margin:2px 0}
+.ghost-btn{display:flex;align-items:center;justify-content:center;width:100%;margin:6px 0;background:var(--card);color:var(--accent);border:1px solid var(--accent)}
+.box-pick{margin:6px -12px 0;border-top:1px dashed var(--line);padding-top:8px}
+.box-pick input{width:calc(100% - 20px);margin:0 10px;min-height:var(--tap);border:1px solid var(--line);border-radius:8px;padding:0 10px;background:var(--bg);color:inherit;font:inherit}
+.box-pick .pick-grid{max-height:360px}
+.box-pick .hint{margin:6px 10px}
+.pick-main{display:flex;align-items:center;justify-content:center;width:100%;margin:8px 0}

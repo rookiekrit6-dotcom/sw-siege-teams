@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20261123164919">
+<link rel="stylesheet" href="style.css?v=20261123165347">
 </head>
 <body>
 <main id="top">
@@ -33,10 +33,18 @@
 
   <section class="box" id="box" hidden aria-label="กล่องมอนของฉัน">
     <div class="box-head"><b>📂 กล่องมอนของฉัน</b><button type="button" id="boxClose" class="link-btn" aria-label="ปิด">✕</button></div>
-    <p>โหลดไฟล์ JSON จากโปรแกรม SWEX แล้วเว็บจะบอกว่าทีมตีไหนคุณมีมอนครบ และ SPD จากรูนของคุณพอหรือยัง</p>
+    <p>บอกเว็บว่าคุณมีมอนตัวไหน แล้วเว็บจะบอกว่าทีมตีไหนคุณมีครบ ถ้าโหลดไฟล์ SWEX จะเทียบ SPD จากรูนให้ด้วย</p>
     <p class="hint">🔒 ไฟล์อ่านในเครื่องคุณเท่านั้น ไม่ได้ส่งขึ้นเว็บ เว็บจำไว้แค่รายชื่อมอนกับ SPD</p>
+    <button type="button" id="boxPickBtn" class="results-btn pick-main" aria-expanded="false" aria-controls="boxPick">✋ เลือกมอนที่มีเอง</button>
+    <div id="boxPick" class="box-pick" hidden>
+      <input type="search" id="bq" placeholder="ค้นชื่อมอน ไทยหรืออังกฤษ" aria-label="ค้นหามอนที่มี" autocomplete="off">
+      <div class="els small" id="bels" role="group" aria-label="กรองตามธาตุ"></div>
+      <p class="hint" id="bcount"></p>
+      <div class="pick-grid" id="bgrid"></div>
+      <button type="button" class="results-btn" id="bdone">เสร็จ</button>
+    </div>
     <div class="box-row">
-      <label class="results-btn file-btn">เลือกไฟล์ SWEX (.json)<input type="file" id="boxFile" accept=".json,application/json" hidden></label>
+      <label class="results-btn ghost-btn file-btn">📄 โหลดไฟล์ SWEX (เทียบ SPD)<input type="file" id="boxFile" accept=".json,application/json" hidden></label>
     </div>
     <p class="box-status"><span id="boxStatus"></span> <button type="button" id="boxClear" class="link-btn" hidden>ลบข้อมูล</button></p>
     <p class="hint"><a href="guide.html">วิธีทำไฟล์ SWEX</a> · SPD คำนวณจากรูน อาจคลาดจากในเกม ±1 · ถ้าเปิดในไลน์แล้วเลือกไฟล์ไม่ได้ ให้เปิดใน Chrome</p>
@@ -93,8 +101,8 @@
 </div>
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script>window.APP_V = "20261123164919"; window.GC_CODE = ""; /* รหัส GoatCounter เช่น "swsiege" (ว่าง = ไม่นับ) */</script>
-<script src="app.js?v=20261123164919" defer></script>
+<script>window.APP_V = "20261123165347"; window.GC_CODE = ""; /* รหัส GoatCounter เช่น "swsiege" (ว่าง = ไม่นับ) */</script>
+<script src="app.js?v=20261123165347" defer></script>
 <!-- Cloudflare Web Analytics (ไม่ใช้คุกกี้) -->
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "9b18064985ae4c728ce87917ae65e707"}'></script>
 </body>
