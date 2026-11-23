@@ -8,7 +8,7 @@
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  const state = { mode: "def", q: "", el: "", data: "", season: "", pick: [], pq: "", pel: "", open: new Set(), runesOpen: new Set() };
+  const state = { mode: "def", q: "", el: "", data: "", base: "", season: "", pick: [], pq: "", pel: "", open: new Set(), runesOpen: new Set() };
   let MON = {}, TEAMS = { def: [], atk: [] }, BY_ID = {}, UPDATED = "", SEASONS = [], MUS = [];
 
   /* ---------- helpers ---------- */
@@ -117,6 +117,9 @@
       x._atk = reg.atk.get(keyOf(x.atk));
       x._def = reg.def.get(keyOf(x.def));
     }
+    const B4 = new Set(ranked.base4 || []);
+    for (const t of reg.def.values()) t.base = B4.has(keyOf(t.m)) ? "4" : "5";
+    for (const x of mu.matchups) x.base = x._def.base;
     BY_ID = {};
     for (const side of ["def", "atk"]) {
       const arr = [...reg[side].values()];
@@ -136,11 +139,12 @@
     SEASONS = [...new Set(mu.matchups.map((x) => x.season).filter(Boolean))].sort().reverse();
   }
 
-  const musFor = (t) => (state.season ? t.mus.filter((x) => x.season === state.season) : t.mus);
+  const musFor = (t) => t.mus.filter((x) => (!state.season || x.season === state.season) && (!state.base || x.base === state.base));
 
   /* ---------- filtering ---------- */
   function baseFilter(t, ignorePick) {
     const mus = musFor(t);
+    if (state.base && (t.side === "def" ? t.base !== state.base : !mus.length)) return false;
     if (state.data === "with" && !mus.length) return false;
     if (state.data === "without" && t.mus.length) return false;
     if (state.data === "mine" && !(BOX && (t.side === "atk" ? mus.length && ownsAll(t.m) : mus.some((x) => ownsAll(x.atk))))) return false;
@@ -163,7 +167,7 @@
     const miss = BOX ? x.atk.filter((k) => !boxHas(k)) : [];
     const mine = BOX ? (miss.length ? `<span class="my-sum no">ขาด ${miss.length} ตัว</span>` : '<span class="my-sum ok">✓ มีครบ</span>') : "";
     const mySpd = BOX && t.side === "atk" ? `<div class="mu-line">ของคุณ: ${x.atk.map((k) => { const v = boxSpd(k); return `${esc(monName(k))} ${v === undefined ? "ไม่มี" : "+" + v}`; }).join(" · ")}</div>` : "";
-    const rk = other ? `${otherSide === "atk" ? "ทีมตีอันดับ" : "เด็คอันดับ"} ${other.rank}` : "";
+    const rk = other ? (otherSide === "atk" ? `ทีมตีอันดับ ${other.rank}` : `เด็คอันดับ ${other.rank} · บ้าน ${x.base}★`) : "";
     const atkSpd = t.side === "atk" && x.runes && x.runes.some((r) => r.spd)
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd != null ? "+" + r.spd : "-"}`).join(" · ")}</div>` : "";
     const g = x.guide && x.guide.first && x.guide.first.length
@@ -200,7 +204,7 @@
   }
 
   function teamHTML(t) {
-    const rk = `<span class="rk">${t.rank}</span>`;
+    const rk = `<span class="rk">${t.rank}${t.side === "def" && t.base === "4" ? '<small class="b4">4★</small>' : ""}</span>`;
     const mons = `<span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span>`;
     const mus = musFor(t);
     const open = state.open.has(t.id);
@@ -345,9 +349,9 @@
   }
 
   function resetFilters() {
-    Object.assign(state, { q: "", el: "", data: "", season: "", pick: [], pq: "", pel: "" });
+    Object.assign(state, { q: "", el: "", data: "", base: "", season: "", pick: [], pq: "", pel: "" });
     $("#q").value = ""; $("#pq").value = ""; $("#season").value = "";
-    setPressed("#els button", "el", ""); setPressed("#pels button", "el", ""); setPressed("#dataSeg button", "d", "");
+    setPressed("#els button", "el", ""); setPressed("#pels button", "el", ""); setPressed("#dataSeg button", "d", ""); setPressed("#baseSeg button", "b", "");
   }
 
   function openFromHash() {
@@ -391,6 +395,10 @@
       const b = e.target.closest("button"); if (!b) return;
       setMode(b.dataset.m); render(); if (state.mode !== "stats") renderPicker();
       if (state.mode === "stats") track("ดูหน้าสถิติ");
+    });
+    $("#baseSeg").addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      state.base = b.dataset.b; setPressed("#baseSeg button", "b", state.base); render(); renderPicker();
     });
     $("#dataSeg").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;

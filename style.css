@@ -167,3 +167,4 @@ button.head[aria-expanded="true"] .rk::after{content:"▾"}
 .g-row{display:flex;align-items:center;gap:.45rem;margin-top:.35rem}
 .g-row img{border-radius:6px;width:28px;height:28px}
 .g-n{display:inline-grid;place-items:center;width:1.3rem;height:1.3rem;border-radius:50%;background:rgba(255,200,80,.3);font-size:.75rem;font-weight:700}
+.rk .b4{display:block;font-size:.62rem;font-weight:700;color:#e0a63a;line-height:1;margin-top:2px}
