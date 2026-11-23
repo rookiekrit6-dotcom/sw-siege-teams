@@ -87,7 +87,7 @@
     const atkSpd = t.side === "atk" && x.runes && x.runes.some((r) => r.spd)
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd ?? "-"}`).join(" · ")}</div>` : "";
     const runes = open
-      ? `<p class="hint tap">แตะรูปเพื่อขยาย</p><div class="runes">${x.runes.map((r) => `<figure><img src="${esc(r.img)}" alt="รูน ${esc(monName(r.m))}" loading="lazy" decoding="async" width="720" height="361"><figcaption>${esc(monName(r.m))}${r.spd ? ` · SPD ${r.spd}` : ""}</figcaption></figure>`).join("")}</div>`
+      ? `<p class="hint tap">แตะรูปเพื่อขยาย</p><div class="runes">${x.runes.map((r) => `<figure><img src="${esc(r.img)}" alt="รูน ${esc(monName(r.m))}" loading="eager" decoding="async" width="720" height="361"><figcaption>${esc(monName(r.m))}${r.spd ? ` · SPD ${r.spd}` : ""}</figcaption></figure>`).join("")}</div>`
       : "";
     return `<div class="mu">
       <div class="mu-top"><div class="mons">${icons}</div>
