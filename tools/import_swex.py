@@ -79,19 +79,25 @@ def rune_summary(unit):
     return {"sets": [SET.get(s, str(s)) for s in full], "main": [mains.get(2, "-"), mains.get(4, "-"), mains.get(6, "-")], "st": st, "n": len(runes)}
 
 
-SKILL_NOTE = "ลำดับใน action_data: [ลำดับ, ชนิด, ตัวเรา(0-2), สกิล(0=S1), เป้า(0-2 ฝั่งเรา, 3-5 ฝั่งศัตรู), ?, สุ่ม]"
+SKILL_NOTE = "action_data: [ลำดับ, ชนิด(0=กดสกิล), สกิล(0=S1), ตัวเรา(0-2 ตามช่อง), เป้า(0-2 ฝั่งเรา, 3-5 ศัตรูตามช่อง), ?, สุ่ม]"
 
 
 def first_moves(j, atk_keys, def_keys):
-    """ตาแรกของทีมตีแต่ละตัว: สกิลที่กด + เป้า (เฉพาะเมื่อเล็งศัตรู) เรียงตามลำดับที่ได้เล่น"""
-    seen, out = set(), []
+    """เทิร์นแรกของทีมตีแต่ละตัว (รวมเทิร์นพิเศษที่ได้ต่อทันที) เรียงตามลำดับที่ได้เล่น"""
+    steps, order, done, cur = {}, [], set(), None
     for a in j.get("action_data") or []:
-        if len(a) < 5 or a[1] != 0 or not (0 <= a[2] < 3) or a[2] in seen:
+        if len(a) < 5 or a[1] != 0 or not (0 <= a[3] < 3):
             continue
-        seen.add(a[2])
-        t = def_keys[a[4] - 3] if 3 <= a[4] < 6 else None
-        out.append({"m": atk_keys[a[2]], "s": a[3] + 1, "t": t})
-    return out
+        u = a[3]
+        if u != cur and cur is not None:
+            done.add(cur)
+        cur = u
+        if u in done:
+            continue
+        if u not in steps:
+            steps[u] = []; order.append(u)
+        steps[u].append({"s": a[2] + 1, "t": def_keys[a[4] - 3] if 3 <= a[4] < 6 else None})
+    return [{"m": atk_keys[u], "steps": steps[u]} for u in order]
 
 
 def main():

@@ -167,8 +167,8 @@
     const atkSpd = t.side === "atk" && x.runes && x.runes.some((r) => r.spd)
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd != null ? "+" + r.spd : "-"}`).join(" · ")}</div>` : "";
     const g = x.guide && x.guide.first && x.guide.first.length
-      ? `<div class="guide"><b>🎯 ตาแรกใช้สกิลอะไร</b> <small>(จาก ${x.guide.games} เกม)</small>${x.guide.first.map((f, i) =>
-          `<div class="g-row"><span class="g-n">${i + 1}</span><img src="${esc((MON[f.m] || {}).img || "")}" alt="" width="28" height="28"><span>${esc(monName(f.m))} ใช้ <b>S${f.s}</b>${f.t ? ` → ${esc(monName(f.t))}` : ""}</span></div>`).join("")}</div>`
+      ? `<div class="guide"><b>🎯 เทิร์นแรกกดสกิลอะไร</b> <small>(จาก ${x.guide.games} เกม)</small>${x.guide.first.map((f, i) =>
+          `<div class="g-row"><span class="g-n">${i + 1}</span><img src="${esc((MON[f.m] || {}).img || "")}" alt="" width="28" height="28"><span>${esc(monName(f.m))} ${(f.steps || [f]).map((st) => `<b>S${st.s}</b>${st.t ? ` ใส่${esc(monName(st.t))}` : ""}`).join(" → ")}</span></div>`).join("")}</div>`
       : "";
     const runes = open
       ? (x.runes.some((r) => r.img) ? '<p class="hint tap">แตะรูปเพื่อขยาย</p>' : "") + `<div class="runes">${x.runes.map(runeCard).join("")}</div>`
