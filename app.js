@@ -167,7 +167,7 @@
     const atkSpd = t.side === "atk" && x.runes && x.runes.some((r) => r.spd)
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd != null ? "+" + r.spd : "-"}`).join(" · ")}</div>` : "";
     const runes = open
-      ? `<p class="hint tap">แตะรูปเพื่อขยาย</p><div class="runes">${x.runes.map((r) => `<figure><img src="${esc(r.img)}" alt="รูน ${esc(monName(r.m))}" loading="eager" decoding="async" width="720" height="361"><figcaption>${esc(monName(r.m))}${r.spd ? ` · SPD +${r.spd}` : ""}</figcaption></figure>`).join("")}</div>`
+      ? (x.runes.some((r) => r.img) ? '<p class="hint tap">แตะรูปเพื่อขยาย</p>' : "") + `<div class="runes">${x.runes.map(runeCard).join("")}</div>`
       : "";
     return `<div class="mu">
       <div class="mu-top"><div class="mons">${icons}</div>
@@ -175,6 +175,17 @@
           <button type="button" class="run-btn" data-runes="${esc(rid)}" aria-expanded="${open}">${open ? "ซ่อนรูน" : "ดูรูนทีมตี"}</button></div></div>
       ${atkSpd}${mySpd}${x.note ? `<div class="mu-line note-line">💬 ${esc(x.note)}</div>` : ""}
       ${runes}</div>`;
+  }
+
+  // การ์ดรูน: แบบภาพหน้าจอ (ข้อมูลเก่า) หรือแบบตัวหนังสือ (นำเข้าจาก SWEX)
+  function runeCard(r) {
+    if (r.img) return `<figure><img src="${esc(r.img)}" alt="รูน ${esc(monName(r.m))}" loading="eager" decoding="async" width="720" height="361"><figcaption>${esc(monName(r.m))}${r.spd ? ` · SPD +${r.spd}` : ""}</figcaption></figure>`;
+    const rs = r.rs || {}, st = rs.st || {};
+    const row = (l, v, pre = "+") => (v ? `<span><i>${l}</i>${pre}${v}</span>` : "");
+    return `<div class="rcard"><div class="rc-head">${monHTML(r.m)}<div><b>${esc((rs.sets || []).join(" + ") || "ไม่ครบชุด")}</b>
+      <small>ช่อง 2/4/6: ${esc((rs.main || []).join(" / "))}</small></div></div>
+      <div class="rc-st">${row("SPD", st.spd)}${row("HP", st.hp)}${row("ATK", st.atk)}${row("DEF", st.def)}${row("CR", st.cr)}${row("CD", st.cd)}${row("RES", st.res)}${row("ACC", st.acc)}</div>
+      <small class="rc-note">ค่าที่บวกจากรูน${rs.n && rs.n < 6 ? ` · ใส่รูน ${rs.n}/6` : ""}</small></div>`;
   }
 
   function detailHTML(t) {

@@ -153,3 +153,12 @@ button.head[aria-expanded="true"] .rk::after{content:"▾"}
 .my-sum.ok{color:#fff;background:#2e7d4f}.my-sum.no{color:#c0392b;border:1px solid #c0392b}
 @media (prefers-color-scheme:dark){.my-tag.ok{color:#6fd39a}.my-tag.low,.my-tag.no{color:#ff8a7a}.my-sum.no{color:#ff8a7a;border-color:#ff8a7a}}
 @media (max-width:420px){.box-btn{padding:0 8px;font-size:.8rem}.submit{font-size:.8rem}}
+
+.rcard{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--card)}
+.rc-head{display:flex;gap:10px;align-items:center}
+.rc-head b{display:block;font-size:.85rem}
+.rc-head small{color:var(--mute);font-size:.72rem}
+.rc-st{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:6px;font-size:.82rem;font-weight:700}
+.rc-st i{font-style:normal;font-weight:400;color:var(--mute);margin-right:3px}
+.rc-st span:first-child{color:var(--gold)}
+.rc-note{color:var(--mute);font-size:.68rem}
