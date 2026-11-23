@@ -44,10 +44,10 @@
   const BOX_KEY = "mybox.v1";
   let BOX = null; // { name, at, n, u: { "<family>-<element>": spdBonus } }
   try { BOX = JSON.parse(localStorage.getItem(BOX_KEY) || "null"); } catch (e) { BOX = null; }
+  // ล้างข้อมูลจากโหมด "เลือกมอนเอง" ที่เคยมีช่วงสั้นๆ (ไม่มีค่า SPD)
+  if (BOX && (BOX.src === "manual" || !BOX.u || Object.values(BOX.u).some((v) => typeof v !== "number"))) { BOX = null; try { localStorage.removeItem(BOX_KEY); } catch (e) {} }
   const famKey = (id) => (id >= 1000000 ? `h${Math.floor(id / 100)}-${id % 10}` : `${Math.floor(id / 100)}-${id % 10}`);
-  const boxKey = (k) => (MON[k] && MON[k].id ? famKey(MON[k].id) : null);
-  // undefined = ไม่มี · null = มี (เลือกเอง ไม่รู้ SPD) · ตัวเลข = SPD จากรูน
-  const boxSpd = (k) => { const b = BOX && boxKey(k); return b && b in BOX.u ? BOX.u[b] : undefined; };
+  const boxSpd = (k) => (BOX && MON[k] && MON[k].id ? BOX.u[famKey(MON[k].id)] : undefined);
   const boxHas = (k) => boxSpd(k) !== undefined;
   const ownsAll = (team) => !!BOX && team.every(boxHas);
 
@@ -82,7 +82,7 @@
     }
     if (!n) throw new Error("ไม่พบมอนที่ปลุกแล้วในไฟล์");
     const w = data.wizard_info || {};
-    return { name: String(w.wizard_name || "").slice(0, 40), at: new Date().toISOString().slice(0, 10), n, u, src: "swex" };
+    return { name: String(w.wizard_name || "").slice(0, 40), at: new Date().toISOString().slice(0, 10), n, u };
   }
   function saveBox(b) { BOX = b; try { b ? localStorage.setItem(BOX_KEY, JSON.stringify(b)) : localStorage.removeItem(BOX_KEY); } catch (e) {} }
 
@@ -91,7 +91,6 @@
     if (!BOX) return "";
     const mine = boxSpd(k);
     if (mine === undefined) return '<b class="my-tag no">ไม่มี</b>';
-    if (mine === null) return '<b class="my-tag ok">คุณมี</b>';
     if (need == null) return `<b class="my-tag ok">คุณ +${mine}</b>`;
     const gap = need - mine;
     return gap <= 0 ? `<b class="my-tag ok">คุณ +${mine}</b>` : `<b class="my-tag low">คุณ +${mine}<br>ขาด ${gap}</b>`;
@@ -163,7 +162,7 @@
     const icons = x[otherSide].map((k) => monHTML(k, otherSide === "atk" && spdOf[k] ? `SPD +${spdOf[k]}` : "", otherSide === "atk" ? boxTag(k, spdOf[k]) : "")).join("");
     const miss = BOX ? x.atk.filter((k) => !boxHas(k)) : [];
     const mine = BOX ? (miss.length ? `<span class="my-sum no">ขาด ${miss.length} ตัว</span>` : '<span class="my-sum ok">✓ มีครบ</span>') : "";
-    const mySpd = BOX && t.side === "atk" ? `<div class="mu-line">ของคุณ: ${x.atk.map((k) => { const v = boxSpd(k); return `${esc(monName(k))} ${v === undefined ? "ไม่มี" : v === null ? "มี" : "+" + v}`; }).join(" · ")}</div>` : "";
+    const mySpd = BOX && t.side === "atk" ? `<div class="mu-line">ของคุณ: ${x.atk.map((k) => { const v = boxSpd(k); return `${esc(monName(k))} ${v === undefined ? "ไม่มี" : "+" + v}`; }).join(" · ")}</div>` : "";
     const rk = other ? `${otherSide === "atk" ? "ทีมตีอันดับ" : "เด็คอันดับ"} ${other.rank}` : "";
     const atkSpd = t.side === "atk" && x.runes && x.runes.some((r) => r.spd)
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd != null ? "+" + r.spd : "-"}`).join(" · ")}</div>` : "";
@@ -438,11 +437,10 @@
     const st = $("#boxStatus"), clr = $("#boxClear"), btn = $("#boxBtn");
     const mineBtn = document.querySelector('#dataSeg button[data-d="mine"]');
     if (BOX) {
-      const n = Object.keys(BOX.u).length;
-      st.textContent = `${BOX.name ? BOX.name + " · " : ""}มอน ${n} ตัว · ${BOX.src === "manual" ? "เลือกเอง" : "จากไฟล์ SWEX"} · อัปเดต ${thDate(BOX.at)}`;
+      st.textContent = `${BOX.name ? BOX.name + " · " : ""}มอน ${BOX.n} ตัว · โหลดเมื่อ ${thDate(BOX.at)}`;
       clr.hidden = false; btn.classList.add("on"); mineBtn.hidden = false;
     } else {
-      st.textContent = "ยังไม่ได้เลือกมอน";
+      st.textContent = "ยังไม่ได้โหลดไฟล์";
       clr.hidden = true; btn.classList.remove("on"); mineBtn.hidden = true;
       if (state.data === "mine") { state.data = ""; setPressed("#dataSeg button", "d", ""); }
     }
@@ -472,45 +470,8 @@
       };
       rd.readAsText(f);
     });
-    $("#boxClear").addEventListener("click", () => { saveBox(null); renderBox(); render(); renderBoxPick(); toast("ลบข้อมูลกล่องมอนแล้ว"); });
-    // เลือกมอนที่มีเอง (ไม่ต้องใช้ไฟล์)
-    $("#boxPickBtn").addEventListener("click", () => {
-      const pk = $("#boxPick"), open = pk.hidden;
-      pk.hidden = !open; $("#boxPickBtn").setAttribute("aria-expanded", String(open));
-      if (open) renderBoxPick();
-    });
-    $("#bq").addEventListener("input", (e) => { boxQ = e.target.value.trim().toLowerCase(); renderBoxPick(); });
-    elChips("#bels", (v) => { boxEl = v; renderBoxPick(); });
-    $("#bgrid").addEventListener("click", (e) => {
-      const b = e.target.closest("button[data-own]"); if (!b) return;
-      const key = boxKey(b.dataset.own); if (!key) return;
-      if (!BOX) BOX = { name: "", at: "", u: {}, src: "manual" };
-      if (key in BOX.u) delete BOX.u[key]; else BOX.u[key] = null;
-      BOX.at = new Date().toISOString().slice(0, 10);
-      saveBox(Object.keys(BOX.u).length ? BOX : null);
-      b.setAttribute("aria-pressed", String(!!BOX && key in BOX.u));
-      $("#bcount").textContent = boxCountText();
-      renderBox(); clearTimeout(bindBox._t); bindBox._t = setTimeout(render, 250);
-    });
-    $("#bdone").addEventListener("click", () => { $("#boxPick").hidden = true; $("#boxPickBtn").setAttribute("aria-expanded", "false"); setOpen(false); });
+    $("#boxClear").addEventListener("click", () => { saveBox(null); renderBox(); render(); toast("ลบข้อมูลกล่องมอนแล้ว"); });
     renderBox();
-  }
-
-  let boxQ = "", boxEl = "", boxOrder = null;
-  const boxCountText = () => `เลือกแล้ว ${BOX ? Object.keys(BOX.u).length : 0} ตัว · กดไอคอนเพื่อเลือก/เอาออก`;
-  function renderBoxPick() {
-    if ($("#boxPick").hidden) return;
-    if (!boxOrder) {
-      // ตัวที่ใช้ในทีมตีขึ้นก่อน (เรียงตามที่ใช้บ่อย) แล้วตามด้วยตัวอื่น ตัดตัวซ้ำที่เป็นมอนเดียวกัน
-      const used = {};
-      MUS.forEach((x) => x.atk.forEach((k) => (used[k] = (used[k] || 0) + 1)));
-      const seen = new Set();
-      boxOrder = Object.keys(MON).filter((k) => MON[k].id).sort((a, b) => (used[b] || 0) - (used[a] || 0) || monName(a).localeCompare(monName(b), "th"))
-        .filter((k) => { const f = boxKey(k); if (seen.has(f)) return false; seen.add(f); return true; });
-    }
-    const list = boxOrder.filter((k) => (!boxQ || monMatch(k, boxQ)) && (!boxEl || MON[k].el === boxEl));
-    $("#bgrid").innerHTML = list.map((k) => `<button type="button" data-own="${esc(k)}" aria-pressed="${boxHas(k)}" style="--c:${monColor(k)}"><img src="${esc(MON[k].img)}" alt="" width="44" height="44" loading="lazy" decoding="async">${esc(monName(k))}</button>`).join("") || '<div class="hint">ไม่พบมอน</div>';
-    $("#bcount").textContent = boxCountText();
   }
 
   async function load() {
