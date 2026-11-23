@@ -260,7 +260,6 @@
       i.remove();
     }
     toast(ok ? "คัดลอกลิงก์แล้ว ส่งในไลน์ได้เลย" : url);
-    try { history.replaceState(null, "", "#" + id); } catch (e) {}
   }
 
   function resetFilters() {
@@ -271,12 +270,14 @@
 
   function openFromHash() {
     const id = decodeURIComponent(location.hash.slice(1));
-    if (id === "stats") { setMode("stats"); render(); window.scrollTo(0, 0); return; }
+    if (id === "stats") { setMode("stats"); render(); window.scrollTo(0, 0); try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} return; }
     const t = BY_ID[id];
     if (!t) return;
     setMode(t.side); resetFilters();
     state.open.add(t.id);
     render(); renderPicker();
+    // เปิดจากลิงก์แล้วลบ #... ออกจากที่อยู่ เพื่อให้กดรีเฟรชแล้วกลับไปหน้าแรกตามปกติ
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     const el = document.getElementById("t-" + id);
     if (el) {
       el.scrollIntoView({ block: "start" });
@@ -412,6 +413,8 @@
       location.replace(u.toString());
     } catch (e) {}
   }
+  // กดรีเฟรชแล้วเริ่มที่บนสุดเสมอ (ไม่ค้างที่ตำแหน่งเดิม)
+  try { history.scrollRestoration = "manual"; } catch (e) {}
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkVersion(); });
   checkVersion();
 
