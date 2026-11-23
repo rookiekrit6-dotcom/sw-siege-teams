@@ -15,25 +15,31 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <main id="top">
-  <header>
-    <h1>ทีมสงครามแห่งการยึดครอง</h1>
-    <p class="sub">ทีมที่มีป้ายกดดูทีมที่ตีชนะและรูนที่ใช้ได้ <span id="updated"></span></p>
-    <a class="submit" href="https://docs.google.com/forms/d/e/1FAIpQLSc1rqq_RnKAq3Cj2cuzaY803iS1UplVPSjjcH0cPlXlvbo0Ig/viewform" target="_blank" rel="noopener">📤 ส่งข้อมูลทีมตีที่ชนะ</a>
+  <header class="hdr">
+    <div class="hdr-text">
+      <h1>ทีมสงครามแห่งการยึดครอง</h1>
+      <p class="sub">กดทีมที่มีป้ายเพื่อดูทีมแก้และรูน <span id="updated"></span></p>
+    </div>
+    <a class="submit" href="https://docs.google.com/forms/d/e/1FAIpQLSc1rqq_RnKAq3Cj2cuzaY803iS1UplVPSjjcH0cPlXlvbo0Ig/viewform" target="_blank" rel="noopener">📤 ส่งข้อมูล</a>
   </header>
 
-  <div class="tabs" id="tabs" role="group" aria-label="โหมด">
-    <button type="button" data-m="def" aria-pressed="true">ทีมตั้งรับ</button>
-    <button type="button" data-m="atk" aria-pressed="false">ทีมโจมตี</button>
+  <div class="sticky">
+    <div class="tabs" id="tabs" role="group" aria-label="โหมด">
+      <button type="button" data-m="def" aria-pressed="true">ทีมตั้งรับ</button>
+      <button type="button" data-m="atk" aria-pressed="false">ทีมโจมตี</button>
+    </div>
   </div>
 
-  <input type="search" id="q" placeholder="ค้นหาชื่อมอนสเตอร์ เช่น มิฮยาง" aria-label="ค้นหาชื่อมอนสเตอร์" autocomplete="off">
+  <div class="search-row">
+    <input type="search" id="q" placeholder="ค้นหาชื่อมอน เช่น มิฮยาง" aria-label="ค้นหาชื่อมอนสเตอร์" autocomplete="off">
+    <button type="button" id="pickToggle" class="pick-toggle" aria-expanded="false" aria-controls="picker">🎯 ไอคอน <span id="pickCount"></span></button>
+  </div>
 
-  <details class="picker" id="picker">
-    <summary>เลือกมอนจากไอคอน <span id="pickCount"></span></summary>
+  <div class="picker" id="picker" hidden>
     <div class="pick-tools">
       <input type="search" id="pq" placeholder="พิมพ์กรองไอคอน" aria-label="กรองไอคอนมอนสเตอร์" autocomplete="off">
       <button type="button" id="pickClear" class="link-btn">ล้างที่เลือก</button>
@@ -42,15 +48,16 @@
     <p class="hint" id="pickHint">เลือกได้สูงสุด 3 ตัว เลือกแล้วไอคอนจะเหลือเฉพาะตัวที่เคยอยู่ทีมเดียวกัน</p>
     <div class="pick-grid" id="pickGrid"></div>
     <button type="button" class="results-btn" id="pickDone">ดูผลลัพธ์</button>
-  </details>
+  </div>
   <div class="chips" id="chips"></div>
 
-  <div class="els" id="els" role="group" aria-label="กรองทีมตามธาตุ"></div>
-  <div class="row-filters">
+  <div class="filter-row">
+    <div class="els" id="els" role="group" aria-label="กรองทีมตามธาตุ"></div>
+    <span class="divider" aria-hidden="true"></span>
     <div class="seg" id="dataSeg" role="group" aria-label="กรองตามข้อมูลรูน">
       <button type="button" data-d="" aria-pressed="true">ทุกทีม</button>
       <button type="button" data-d="with" aria-pressed="false">มีข้อมูลรูน</button>
-      <button type="button" data-d="without" aria-pressed="false">ยังไม่มีข้อมูล</button>
+      <button type="button" data-d="without" aria-pressed="false">ยังไม่มี</button>
     </div>
     <select id="season" aria-label="ซีซั่น" hidden></select>
   </div>
@@ -69,7 +76,7 @@
 </div>
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script src="app.js?v=4" defer></script>
+<script src="app.js?v=5" defer></script>
 <!-- Cloudflare Web Analytics (ไม่ใช้คุกกี้) -->
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "9b18064985ae4c728ce87917ae65e707"}'></script>
 </body>

@@ -21,7 +21,9 @@
   };
   const monHTML = (k, extra) => {
     const m = MON[k];
-    return `<span class="m" style="--c:${monColor(k)}"><img src="${esc(m ? m.img : "")}" alt="" width="52" height="52" loading="lazy" decoding="async">${esc(monName(k))}${extra ? `<b class="spd-tag">${esc(extra)}</b>` : ""}</span>`;
+    const nm = monName(k), sp = nm.match(/^(.+?)\s*(\(.+\))$/);
+    const label = sp ? `${esc(sp[1])}<small>${esc(sp[2])}</small>` : esc(nm);
+    return `<span class="m" style="--c:${monColor(k)}" title="${esc(nm)}"><img src="${esc(m ? m.img : "")}" alt="" width="52" height="52" loading="lazy" decoding="async">${label}${extra ? `<b class="spd-tag">${esc(extra)}</b>` : ""}</span>`;
   };
 
   /* ---------- data model ---------- */
@@ -134,6 +136,18 @@
     done.textContent = `ดูผลลัพธ์ (${rows.length} ทีม)`;
   }
 
+  // วาดใหม่เฉพาะการ์ดทีมเดียว ไม่แตะการ์ดอื่น (รูปรูนที่เปิดค้างไว้จะไม่กระพริบ)
+  function rerenderTeam(id) {
+    const t = BY_ID[id], el = document.getElementById("t-" + id);
+    if (!t || !el) { render(); return; }
+    const focusedTeam = document.activeElement && document.activeElement.closest && document.activeElement.closest(".team") === el;
+    const focusSel = focusedTeam && document.activeElement.dataset.runes ? `[data-runes="${CSS.escape(document.activeElement.dataset.runes)}"]` : "button.head";
+    const tpl = document.createElement("template");
+    tpl.innerHTML = teamHTML(t).trim();
+    el.replaceWith(tpl.content.firstElementChild);
+    if (focusedTeam) { const f = document.getElementById("t-" + id).querySelector(focusSel); if (f) f.focus({ preventScroll: true }); }
+  }
+
   function renderChips() {
     $("#chips").innerHTML = state.pick.map((k) => `<span class="chip">${esc(monName(k))}<button type="button" data-unpick="${esc(k)}" aria-label="เอา ${esc(monName(k))} ออก">×</button></span>`).join("")
       + (state.pick.length ? '<button type="button" class="link-btn" data-unpick="*">ล้างทั้งหมด</button>' : "");
@@ -241,7 +255,9 @@
     $("#q").addEventListener("input", (e) => { clearTimeout(qt); qt = setTimeout(() => { state.q = e.target.value.trim().toLowerCase(); render(); renderPicker(); }, 120); });
     $("#pq").addEventListener("input", (e) => { state.pq = e.target.value.trim().toLowerCase(); renderPicker(); });
     $("#pickClear").addEventListener("click", () => { state.pick = []; render(); renderPicker(); });
-    $("#pickDone").addEventListener("click", () => { $("#picker").open = false; $("#cnt").scrollIntoView({ block: "start", behavior: "smooth" }); });
+    const setPicker = (open) => { $("#picker").hidden = !open; $("#pickToggle").setAttribute("aria-expanded", String(open)); };
+    $("#pickToggle").addEventListener("click", () => setPicker($("#picker").hidden));
+    $("#pickDone").addEventListener("click", () => { setPicker(false); $("#cnt").scrollIntoView({ block: "start", behavior: "smooth" }); });
     $("#pickGrid").addEventListener("click", (e) => {
       const b = e.target.closest("button[data-pick]"); if (!b) return;
       const k = b.dataset.pick;
@@ -259,11 +275,11 @@
       const img = e.target.closest(".runes img");
       if (img) { openLightbox(img.src, img.alt); return; }
       const rb = e.target.closest("button[data-runes]");
-      if (rb) { const r = rb.dataset.runes; state.runesOpen.has(r) ? state.runesOpen.delete(r) : state.runesOpen.add(r); render(); return; }
+      if (rb) { const r = rb.dataset.runes; state.runesOpen.has(r) ? state.runesOpen.delete(r) : state.runesOpen.add(r); rerenderTeam(r.split(":")[0]); return; }
       const sb = e.target.closest("button[data-share]");
       if (sb) { share(sb.dataset.share); return; }
       const hb = e.target.closest("button[data-team]");
-      if (hb) { const id = hb.dataset.team; state.open.has(id) ? state.open.delete(id) : state.open.add(id); render(); }
+      if (hb) { const id = hb.dataset.team; state.open.has(id) ? state.open.delete(id) : state.open.add(id); rerenderTeam(id); }
     });
     $("#lb").addEventListener("click", (e) => {
       if (e.target.tagName === "IMG") { $("#lb").classList.toggle("zoom"); return; }
