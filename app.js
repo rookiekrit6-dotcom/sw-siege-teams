@@ -394,6 +394,27 @@
     g.dataset.goatcounter = `https://${window.GC_CODE}.goatcounter.com/count`;
     document.head.appendChild(g);
   }
+  /* ---------- บังคับรีเฟรชเมื่อมีเวอร์ชันใหม่ ----------
+     เช็ก version.json ตอนเปิดหน้าและทุกครั้งที่กลับมาที่แท็บ (เช่น สลับจากไลน์)
+     ถ้าไม่ตรงกับเวอร์ชันที่เปิดอยู่ จะโหลดหน้าใหม่ด้วย ?v=ใหม่ เพื่อข้ามแคช (กันวนด้วย sessionStorage) */
+  async function checkVersion() {
+    try {
+      const r = await fetch("version.json?t=" + Date.now(), { cache: "no-store" });
+      if (!r.ok) return;
+      const v = String((await r.json()).v || "");
+      if (!v || v === window.APP_V) return;
+      let done = "";
+      try { done = sessionStorage.getItem("reloadedFor") || ""; } catch (e) {}
+      if (done === v) return;
+      try { sessionStorage.setItem("reloadedFor", v); } catch (e) {}
+      const u = new URL(location.href);
+      u.searchParams.set("v", v);
+      location.replace(u.toString());
+    } catch (e) {}
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkVersion(); });
+  checkVersion();
+
   bind();
   load();
 })();
