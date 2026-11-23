@@ -47,7 +47,7 @@
     for (const side of ["def", "atk"]) {
       for (const t of ranked[side]) {
         const k = keyOf(t.m);
-        if (!reg[side].has(k)) reg[side].set(k, { side, id: `${side}-r${t.rank}`, rank: t.rank, pop: t.pop, m: t.m, mus: [] });
+        if (!reg[side].has(k)) reg[side].set(k, { side, id: `${side}-r${t.rank}`, rank: t.rank, swlens: true, pop: t.pop, m: t.m, mus: [] });
       }
     }
     for (const x of mu.matchups) {
@@ -62,7 +62,10 @@
     BY_ID = {};
     for (const side of ["def", "atk"]) {
       const arr = [...reg[side].values()];
-      arr.sort((a, b) => (a.rank ?? 1e9) - (b.rank ?? 1e9));
+      // ทีมที่ไม่มีในอันดับ SWLens ต่อท้ายเป็นอันดับถัดไป (101, 102, …) ตามลำดับที่ส่งข้อมูลเข้ามา
+      let next = Math.max(0, ...arr.filter((t) => t.rank).map((t) => t.rank)) + 1;
+      for (const t of arr) if (!t.rank) t.rank = next++;
+      arr.sort((a, b) => a.rank - b.rank);
       for (const t of arr) {
         t.mus.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
         t.newest = t.mus.reduce((d, x) => (x.added > d ? x.added : d), "");
@@ -98,7 +101,7 @@
     const open = state.runesOpen.has(rid);
     const spdOf = Object.fromEntries((x.runes || []).map((r) => [r.m, r.spd]));
     const icons = x[otherSide].map((k) => monHTML(k, otherSide === "atk" && spdOf[k] ? `SPD +${spdOf[k]}` : "")).join("");
-    const rk = other && other.rank ? `อันดับ ${other.rank}` : "กิลด์";
+    const rk = other ? `อันดับ ${other.rank}` : "";
     const atkSpd = t.side === "atk" && x.runes && x.runes.some((r) => r.spd)
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd != null ? "+" + r.spd : "-"}`).join(" · ")}</div>` : "";
     const runes = open
@@ -106,7 +109,7 @@
       : "";
     return `<div class="mu">
       <div class="mu-top"><div class="mons">${icons}</div>
-        <div class="mu-meta"><span class="rkb">${rk}</span>${x.season ? `<span class="season">${esc(x.season)}</span>` : ""}${x.date ? `<span>ตีเมื่อ ${esc(thDate(x.date))}</span>` : ""}${isOld(x.date) ? OLD_TAG : ""}${isNew(x.added) ? '<span class="new">ใหม่</span>' : ""}
+        <div class="mu-meta"><span class="rkb">${rk}</span>${x.season ? `<span class="season">${esc(x.season)}</span>` : ""}${x.date ? `<span>ตีเมื่อ ${esc(thDate(x.date))}</span>` : ""}${isOld(x.date) ? OLD_TAG : ""}${isNew(x.added) && !isOld(x.date) ? '<span class="new">ใหม่</span>' : ""}
           <button type="button" class="run-btn" data-runes="${esc(rid)}" aria-expanded="${open}">${open ? "ซ่อนรูน" : "ดูรูนทีมตี"}</button></div></div>
       ${atkSpd}${x.note ? `<div class="mu-line note-line">💬 ${esc(x.note)}</div>` : ""}
       ${runes}</div>`;
@@ -120,7 +123,7 @@
   }
 
   function teamHTML(t) {
-    const rk = t.rank ? `<span class="rk">${t.rank}</span>` : `<span class="rk g">กิลด์</span>`;
+    const rk = `<span class="rk">${t.rank}</span>`;
     const mons = `<span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span>`;
     const mus = musFor(t);
     const open = state.open.has(t.id);
@@ -134,7 +137,7 @@
     const label = t.side === "atk" ? `ตีได้ ${mus.length} ทีม` : `มีทีมแก้ ${mus.length} ทีม`;
     return `<article class="team has" id="t-${esc(t.id)}">
       <button type="button" class="head" data-team="${esc(t.id)}" aria-expanded="${open}" aria-controls="det-${esc(t.id)}">${rk}${mons}
-        <span class="badges"><span class="tag">${label}</span>${isNew(t.newest) ? '<span class="new">ใหม่</span>' : ""}${t.allOld ? OLD_TAG : ""}</span></button>
+        <span class="badges"><span class="tag">${label}</span></span></button>
       ${open ? detailHTML(t) : ""}</article>`;
   }
 
@@ -143,17 +146,10 @@
     if (state.mode === "stats") { renderStats(); return; }
     const all = TEAMS[state.mode];
     const rows = visibleTeams();
-    const nRank = all.filter((t) => t.rank).length, nGuild = all.length - nRank, nData = all.filter((t) => musFor(t).length).length;
+    const nData = all.filter((t) => musFor(t).length).length;
     const filtered = rows.length !== all.length;
-    $("#cnt").textContent = (filtered ? `แสดง ${rows.length} ทีม · ` : "") + `อันดับ ${nRank} ทีม` + (nGuild ? ` + กิลด์ ${nGuild} ทีม` : "") + ` · มีข้อมูลรูน ${nData} ทีม`;
-    const withD = rows.filter((t) => musFor(t).length), without = rows.filter((t) => !musFor(t).length);
-    let html = "";
-    if (withD.length) html += `<h2 class="sec">ทีมที่มีข้อมูลรูน (${withD.length})</h2>` + withD.map(teamHTML).join("");
-    if (without.length) {
-      const label = state.mode === "def" && withD.length ? "เด็คที่ยังไม่มีทีมแก้ — ช่วยกันส่งข้อมูลได้" : "อันดับทีมยอดนิยม";
-      html += `<h2 class="sec">${label} (${without.length})</h2>` + without.map(teamHTML).join("");
-    }
-    $("#list").innerHTML = html || '<div class="empty">ไม่พบทีมที่ตรงกับตัวกรอง ลองล้างช่องค้นหา ตัวที่เลือก หรือเลือกธาตุอื่น</div>';
+    $("#cnt").textContent = (filtered ? `แสดง ${rows.length} จาก ` : "ทั้งหมด ") + `${all.length} ทีม · มีข้อมูลรูน ${nData} ทีม`;
+    $("#list").innerHTML = rows.map(teamHTML).join("") || '<div class="empty">ไม่พบทีมที่ตรงกับตัวกรอง ลองล้างช่องค้นหา ตัวที่เลือก หรือเลือกธาตุอื่น</div>';
     renderChips();
     const done = $("#pickDone");
     done.textContent = `ดูผลลัพธ์ (${rows.length} ทีม)`;
@@ -173,7 +169,7 @@
   /* ---------- หน้าสถิติ ---------- */
   function renderStats() {
     const defs = TEAMS.def.filter((t) => t.mus.length), atks = TEAMS.atk.filter((t) => t.mus.length);
-    const rankedDef = defs.filter((t) => t.rank).length, totalRankedDef = TEAMS.def.filter((t) => t.rank).length;
+    const rankedDef = defs.filter((t) => t.swlens).length, totalRankedDef = TEAMS.def.filter((t) => t.swlens).length;
     const latest = MUS.reduce((d, x) => ((x.date || "") > d ? x.date : d), "");
     const oldN = MUS.filter((x) => isOld(x.date)).length;
     $("#cnt").textContent = `สรุปจากข้อมูลทีมตีชนะ ${MUS.length} คู่`;
@@ -186,7 +182,7 @@
     const bars = top.map(([k, n]) => `<div class="st-bar">${monHTML(k)}<span class="st-track"><span style="width:${Math.max(8, (n / max) * 100)}%"></span></span><b>${n}</b></div>`).join("");
     // เด็คที่มีทีมแก้มากสุด
     const most = [...defs].sort((a, b) => b.mus.length - a.mus.length || (a.rank ?? 1e9) - (b.rank ?? 1e9)).slice(0, 5);
-    const decks = most.map((t) => `<a class="st-deck" href="#${esc(t.id)}"><span class="rk${t.rank ? "" : " g"}">${t.rank || "กิลด์"}</span><span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span><span class="tag">${t.mus.length} ทีมแก้</span></a>`).join("");
+    const decks = most.map((t) => `<a class="st-deck" href="#${esc(t.id)}"><span class="rk">${t.rank}</span><span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span><span class="tag">${t.mus.length} ทีมแก้</span></a>`).join("");
     // ข้อมูลตามปี
     const yrs = {};
     MUS.forEach((x) => { const y = x.date ? String(Number(x.date.slice(0, 4)) + 543) : "ไม่ระบุ"; yrs[y] = (yrs[y] || 0) + 1; });
