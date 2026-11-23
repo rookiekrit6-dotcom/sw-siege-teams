@@ -8,7 +8,7 @@
 เก็บเฉพาะคู่ที่มีรูนทีมตีครบ 3 ตัว (ตามกติกาเว็บ) ไม่เก็บชื่อผู้เล่น/ชื่อกิลด์
 ไฟล์บันทึกมีรหัสเข้าระบบของผู้ใช้ — ห้าม commit ไฟล์นี้ขึ้น repo
 """
-import argparse, base64, datetime, json, os, re, sys, zlib
+import argparse, base64, datetime, json, os, re, subprocess, sys, zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 D = os.path.join(ROOT, "data")
@@ -100,6 +100,34 @@ def first_moves(j, atk_keys, def_keys):
     return [{"m": atk_keys[u], "steps": steps[u]} for u in order]
 
 
+ICON_URL = "https://raw.githubusercontent.com/PeteAndersen/swarfarm/master/herders/static/herders/images/monsters/unit_icon_{}.png"
+ELEM = {"Water": "water", "Fire": "fire", "Wind": "wind", "Light": "light", "Dark": "dark"}
+
+
+def add_monster(mid, mons, dry):
+    """มอนที่เว็บยังไม่มี: ดึงชื่อ/ธาตุจากรายการ SWARFARM (tools/swarfarm_monsters.json) + ไอคอนจาก GitHub
+    ชื่อไทยเอาจาก tools/th_names.json ถ้าไม่มีจะใช้ชื่ออังกฤษไปก่อน (th_pending) แล้วค่อยแก้"""
+    sw = {r[0]: r for r in json.load(open(os.path.join(ROOT, "tools", "swarfarm_monsters.json"), encoding="utf-8"))}
+    r = sw.get(mid)
+    if not r:
+        return None
+    th = json.load(open(os.path.join(ROOT, "tools", "th_names.json"), encoding="utf-8")) if os.path.exists(os.path.join(ROOT, "tools", "th_names.json")) else {}
+    name = th.get(str(mid)) or r[3]
+    key = name if name not in mons else f"{name} ({ELEM.get(r[4], r[4])})"
+    n = 1 + max([int(re.sub(r"\D", "", os.path.basename(v["img"])) or 0) for v in mons.values() if os.path.basename(v["img"]).startswith("a")] or [0])
+    img = f"img/mon/a{n:03d}.jpg"
+    if not dry:
+        tmp = os.path.join(ROOT, ".icon.png")
+        if subprocess.run(["curl", "-sf", "-o", tmp, ICON_URL.format(r[1])]).returncode == 0:
+            from PIL import Image
+            im = Image.open(tmp).convert("RGBA"); bg = Image.new("RGB", im.size, (40, 40, 48)); bg.paste(im, mask=im.split()[3])
+            bg.resize((96, 96), Image.LANCZOS).save(os.path.join(ROOT, img), quality=86); os.remove(tmp)
+    mons[key] = {"n": key, "el": ELEM.get(r[4], "light"), "img": img, "id": mid, "en": r[3]}
+    if str(mid) not in th:
+        mons[key]["th_pending"] = True
+    return key
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("logs", nargs="+")
@@ -150,7 +178,7 @@ def main():
     have = {x.get("ref") for x in data["matchups"] if x.get("ref")}
     n = 1 + max([int(x["id"][1:]) for x in data["matchups"] if x["id"][1:].isdigit()] or [0])
     today = datetime.date.today().isoformat()
-    missing, added, skipped = set(), 0, 0
+    missing, added, skipped, new_mons = set(), 0, 0, []
     for ref, rp in sorted(replays.items(), key=lambda kv: str(kv[0])):
         if ref in have:
             continue
@@ -161,7 +189,11 @@ def main():
         for mid in rp["atk"] + rp["def"]:
             k = by_fam.get(fam(mid))
             if not k:
-                missing.add(mid)
+                k = add_monster(mid, mons, a.dry)
+                if k:
+                    by_fam[fam(mid)] = k; new_mons.append(k)
+                else:
+                    missing.add(mid)
             keys.append(k)
         if None in keys:
             skipped += 1
@@ -183,6 +215,10 @@ def main():
     print(f"รีเพลย์ {len(replays)} · มีรูนทีมตี {len(runes)} · เพิ่มใหม่ {added} · ข้าม {skipped}")
     if missing:
         print("มอนที่ยังไม่มีในเว็บ (unit_master_id):", sorted(missing))
+    if new_mons:
+        print("เพิ่มมอนใหม่:", ", ".join(f"{k} ({mons[k]['en']}){' ← ยังไม่มีชื่อไทย' if mons[k].get('th_pending') else ''}" for k in new_mons))
+        if not a.dry:
+            open(os.path.join(D, "monsters.json"), "w", encoding="utf-8").write(json.dumps(mons, ensure_ascii=False, separators=(",", ":")))
     if added and not a.dry:
         data["updated"] = today
         json.dump(data, open(os.path.join(D, "matchups.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)

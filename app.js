@@ -305,7 +305,12 @@
 
   let pickOrder = [];
   function pickCandidates() {
-    if (!state.pick.length) return pickOrder;
+    if (!state.pick.length) {
+      // เฉพาะมอนที่มีในแท็บ/บ้านปัจจุบัน เรียงตามจำนวนทีมที่ใช้ (ใช้บ่อยอยู่บนสุด)
+      const f = {};
+      for (const t of TEAMS[state.mode]) if (baseFilter(t, true)) t.m.forEach((k) => (f[k] = (f[k] || 0) + 1));
+      return pickOrder.filter((k) => f[k]).sort((x, y) => f[y] - f[x]);
+    }
     // เฉพาะตัวที่เคยอยู่ทีมเดียวกับทุกตัวที่เลือก (ในแท็บปัจจุบัน และตามตัวกรองอื่น)
     const co = new Set();
     for (const t of TEAMS[state.mode]) {
