@@ -2,18 +2,22 @@
 (() => {
   const EL = { water: ["น้ำ", "--water"], fire: ["ไฟ", "--fire"], wind: ["ลม", "--wind"], light: ["แสง", "--light"], dark: ["มืด", "--dark"] };
   const NEW_DAYS = 14;
+  const OLD_DAYS = 365; // ตีไว้นานกว่านี้ ขึ้นป้าย "ข้อมูลเก่า"
+  const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSc1rqq_RnKAq3Cj2cuzaY803iS1UplVPSjjcH0cPlXlvbo0Ig/viewform";
   const MAX_PICK = 3;
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   const state = { mode: "def", q: "", el: "", data: "", season: "", pick: [], pq: "", pel: "", open: new Set(), runesOpen: new Set() };
-  let MON = {}, TEAMS = { def: [], atk: [] }, BY_ID = {}, UPDATED = "", SEASONS = [];
+  let MON = {}, TEAMS = { def: [], atk: [] }, BY_ID = {}, UPDATED = "", SEASONS = [], MUS = [];
 
   /* ---------- helpers ---------- */
   const keyOf = (ms) => [...ms].sort().join("|");
   const monName = (k) => (MON[k] ? MON[k].n : k);
   const monColor = (k) => (MON[k] && EL[MON[k].el] ? `var(${EL[MON[k].el][1]})` : "var(--line)");
   const bkk = (iso) => new Date(iso + "T00:00:00+07:00").getTime();
+  const isOld = (iso) => !!iso && (Date.now() - bkk(iso)) / 864e5 > OLD_DAYS;
+  const OLD_TAG = '<span class="old" title="ตีไว้นานกว่า 1 ปี เกมอาจปรับสมดุลไปแล้ว">ข้อมูลเก่า</span>';
   const isNew = (iso) => { if (!iso) return false; const d = (Date.now() - bkk(iso)) / 864e5; return d <= NEW_DAYS && d >= -1; };
   const thDate = (iso) => {
     try { return new Date(bkk(iso)).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "Asia/Bangkok" }); }
@@ -26,10 +30,19 @@
     return `<span class="m" style="--c:${monColor(k)}" title="${esc(nm)}"><img src="${esc(m ? m.img : "")}" alt="" width="52" height="52" loading="lazy" decoding="async">${label}${extra ? `<b class="spd-tag">${esc(extra)}</b>` : ""}</span>`;
   };
 
+  /* ---------- สถิติการใช้งาน (GoatCounter) ----------
+     นับแบบไม่เก็บข้อมูลส่วนตัว: เปิดทีมไหน ค้นหาอะไรแล้วเจอ/ไม่เจอทีมแก้
+     เปิดใช้โดยใส่รหัสใน window.GC_CODE ที่ index.html */
+  function track(path, title) {
+    try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: path.slice(0, 200), title: title || path, event: true }); } catch (e) {}
+  }
+  const teamLabel = (t) => t.m.map(monName).join(" · ");
+
   /* ---------- data model ---------- */
   function build(monsters, ranked, mu) {
     MON = monsters;
     UPDATED = mu.updated || "";
+    MUS = mu.matchups;
     const reg = { def: new Map(), atk: new Map() };
     for (const side of ["def", "atk"]) {
       for (const t of ranked[side]) {
@@ -53,6 +66,8 @@
       for (const t of arr) {
         t.mus.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
         t.newest = t.mus.reduce((d, x) => (x.added > d ? x.added : d), "");
+        t.latest = t.mus.reduce((d, x) => ((x.date || "") > d ? x.date : d), "");
+        t.allOld = t.mus.length > 0 && t.mus.every((x) => isOld(x.date));
         BY_ID[t.id] = t;
       }
       TEAMS[side] = arr;
@@ -91,7 +106,7 @@
       : "";
     return `<div class="mu">
       <div class="mu-top"><div class="mons">${icons}</div>
-        <div class="mu-meta"><span class="rkb">${rk}</span>${x.season ? `<span class="season">${esc(x.season)}</span>` : ""}${x.date ? `<span>ตีเมื่อ ${esc(thDate(x.date))}</span>` : ""}${isNew(x.added) ? '<span class="new">ใหม่</span>' : ""}
+        <div class="mu-meta"><span class="rkb">${rk}</span>${x.season ? `<span class="season">${esc(x.season)}</span>` : ""}${x.date ? `<span>ตีเมื่อ ${esc(thDate(x.date))}</span>` : ""}${isOld(x.date) ? OLD_TAG : ""}${isNew(x.added) ? '<span class="new">ใหม่</span>' : ""}
           <button type="button" class="run-btn" data-runes="${esc(rid)}" aria-expanded="${open}">${open ? "ซ่อนรูน" : "ดูรูนทีมตี"}</button></div></div>
       ${atkSpd}${x.note ? `<div class="mu-line note-line">💬 ${esc(x.note)}</div>` : ""}
       ${runes}</div>`;
@@ -108,16 +123,24 @@
     const rk = t.rank ? `<span class="rk">${t.rank}</span>` : `<span class="rk g">กิลด์</span>`;
     const mons = `<span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span>`;
     const mus = musFor(t);
-    if (!mus.length) return `<article class="team" id="t-${esc(t.id)}"><div class="head">${rk}${mons}</div></article>`;
     const open = state.open.has(t.id);
+    if (!mus.length) {
+      const msg = t.side === "def" ? "ยังไม่มีทีมแก้เด็คนี้" : "ยังไม่มีข้อมูลว่าทีมนี้ตีชนะเด็คไหน";
+      return `<article class="team" id="t-${esc(t.id)}">
+      <button type="button" class="head" data-team="${esc(t.id)}" aria-expanded="${open}" aria-controls="det-${esc(t.id)}">${rk}${mons}</button>
+      ${open ? `<div class="det" id="det-${esc(t.id)}"><p class="nodata">${msg} ถ้าเคยตีชนะ ส่งภาพหน้าจอมาได้เลย</p>
+        <div class="det-foot"><a class="link-btn" href="${FORM_URL}" target="_blank" rel="noopener">📤 ส่งข้อมูลทีมนี้</a><button type="button" class="link-btn" data-share="${esc(t.id)}">🔗 คัดลอกลิงก์</button></div></div>` : ""}</article>`;
+    }
     const label = t.side === "atk" ? `ตีได้ ${mus.length} ทีม` : `มีทีมแก้ ${mus.length} ทีม`;
     return `<article class="team has" id="t-${esc(t.id)}">
       <button type="button" class="head" data-team="${esc(t.id)}" aria-expanded="${open}" aria-controls="det-${esc(t.id)}">${rk}${mons}
-        <span class="badges"><span class="tag">${label}</span>${isNew(t.newest) ? '<span class="new">ใหม่</span>' : ""}</span></button>
+        <span class="badges"><span class="tag">${label}</span>${isNew(t.newest) ? '<span class="new">ใหม่</span>' : ""}${t.allOld ? OLD_TAG : ""}</span></button>
       ${open ? detailHTML(t) : ""}</article>`;
   }
 
   function render() {
+    document.body.classList.toggle("stats-mode", state.mode === "stats");
+    if (state.mode === "stats") { renderStats(); return; }
     const all = TEAMS[state.mode];
     const rows = visibleTeams();
     const nRank = all.filter((t) => t.rank).length, nGuild = all.length - nRank, nData = all.filter((t) => musFor(t).length).length;
@@ -134,6 +157,48 @@
     renderChips();
     const done = $("#pickDone");
     done.textContent = `ดูผลลัพธ์ (${rows.length} ทีม)`;
+    trackSearch(rows);
+  }
+
+  // นับคำค้น: รอให้พิมพ์เสร็จก่อน แล้วบันทึกว่าเจอทีมที่มีข้อมูลรูนไหม
+  let lastQ = "", searchT;
+  function trackSearch(rows) {
+    clearTimeout(searchT);
+    const q = state.q;
+    if (!q || q === lastQ) return;
+    const hit = rows.some((t) => musFor(t).length);
+    searchT = setTimeout(() => { lastQ = q; track(`ค้นหา/${state.mode}/${hit ? "เจอ" : "ไม่เจอ"}/${q}`); }, 1500);
+  }
+
+  /* ---------- หน้าสถิติ ---------- */
+  function renderStats() {
+    const defs = TEAMS.def.filter((t) => t.mus.length), atks = TEAMS.atk.filter((t) => t.mus.length);
+    const rankedDef = defs.filter((t) => t.rank).length, totalRankedDef = TEAMS.def.filter((t) => t.rank).length;
+    const latest = MUS.reduce((d, x) => ((x.date || "") > d ? x.date : d), "");
+    const oldN = MUS.filter((x) => isOld(x.date)).length;
+    $("#cnt").textContent = `สรุปจากข้อมูลทีมตีชนะ ${MUS.length} คู่`;
+    const box = (n, l) => `<div class="st-box"><b>${n}</b><span>${l}</span></div>`;
+    // มอนที่ใช้ตีบ่อย
+    const used = {};
+    MUS.forEach((x) => x.atk.forEach((k) => (used[k] = (used[k] || 0) + 1)));
+    const top = Object.entries(used).sort((a, b) => b[1] - a[1] || monName(a[0]).localeCompare(monName(b[0]), "th")).slice(0, 10);
+    const max = top.length ? top[0][1] : 1;
+    const bars = top.map(([k, n]) => `<div class="st-bar">${monHTML(k)}<span class="st-track"><span style="width:${Math.max(8, (n / max) * 100)}%"></span></span><b>${n}</b></div>`).join("");
+    // เด็คที่มีทีมแก้มากสุด
+    const most = [...defs].sort((a, b) => b.mus.length - a.mus.length || (a.rank ?? 1e9) - (b.rank ?? 1e9)).slice(0, 5);
+    const decks = most.map((t) => `<a class="st-deck" href="#${esc(t.id)}"><span class="rk${t.rank ? "" : " g"}">${t.rank || "กิลด์"}</span><span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span><span class="tag">${t.mus.length} ทีมแก้</span></a>`).join("");
+    // ข้อมูลตามปี
+    const yrs = {};
+    MUS.forEach((x) => { const y = x.date ? String(Number(x.date.slice(0, 4)) + 543) : "ไม่ระบุ"; yrs[y] = (yrs[y] || 0) + 1; });
+    const ymax = Math.max(1, ...Object.values(yrs));
+    const years = Object.entries(yrs).sort((a, b) => a[0].localeCompare(b[0])).map(([y, n]) => `<div class="st-bar"><span class="st-y">${y === "ไม่ระบุ" ? y : "พ.ศ. " + y}</span><span class="st-track"><span style="width:${Math.max(8, (n / ymax) * 100)}%"></span></span><b>${n}</b></div>`).join("");
+    $("#list").innerHTML = `
+      <div class="st-grid">${box(MUS.length, "คู่ทีมตีชนะ")}${box(defs.length, "เด็คตั้งรับที่มีทีมแก้")}${box(`${rankedDef}/${totalRankedDef}`, "เด็คอันดับ SWLens ที่มีทีมแก้")}${box(latest ? thDate(latest) : "-", "ข้อมูลล่าสุดตีเมื่อ")}</div>
+      <h2 class="sec">มอนที่ใช้ตีบ่อยที่สุด</h2><div class="st-list">${bars}</div>
+      <h2 class="sec">เด็คตั้งรับที่มีทีมแก้มากที่สุด</h2><div class="st-list">${decks}</div>
+      <h2 class="sec">จำนวนข้อมูลตามปีที่ตี</h2><div class="st-list">${years}</div>
+      <p class="hint">${oldN ? `มี ${oldN} คู่ที่ตีไว้นานกว่า 1 ปี จะขึ้นป้าย "ข้อมูลเก่า" เพราะเกมอาจปรับสมดุลไปแล้ว · ` : ""}นับเฉพาะเกมที่ตีชนะ ไม่ใช่อัตราชนะ · ทีมตีทั้งหมด ${atks.length} ทีม</p>
+      <a class="results-btn" href="${FORM_URL}" target="_blank" rel="noopener">📤 ช่วยส่งข้อมูลเพิ่ม</a>`;
   }
 
   // วาดใหม่เฉพาะการ์ดทีมเดียว ไม่แตะการ์ดอื่น (รูปรูนที่เปิดค้างไว้จะไม่กระพริบ)
@@ -210,10 +275,11 @@
 
   function openFromHash() {
     const id = decodeURIComponent(location.hash.slice(1));
+    if (id === "stats") { setMode("stats"); render(); window.scrollTo(0, 0); return; }
     const t = BY_ID[id];
     if (!t) return;
     setMode(t.side); resetFilters();
-    if (t.mus.length) state.open.add(t.id);
+    state.open.add(t.id);
     render(); renderPicker();
     const el = document.getElementById("t-" + id);
     if (el) {
@@ -244,7 +310,8 @@
     elChips("#pels", (v) => { state.pel = v; renderPicker(); });
     $("#tabs").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
-      setMode(b.dataset.m); render(); renderPicker();
+      setMode(b.dataset.m); render(); if (state.mode !== "stats") renderPicker();
+      if (state.mode === "stats") track("ดูหน้าสถิติ");
     });
     $("#dataSeg").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
@@ -279,7 +346,12 @@
       const sb = e.target.closest("button[data-share]");
       if (sb) { share(sb.dataset.share); return; }
       const hb = e.target.closest("button[data-team]");
-      if (hb) { const id = hb.dataset.team; state.open.has(id) ? state.open.delete(id) : state.open.add(id); rerenderTeam(id); }
+      if (hb) {
+        const id = hb.dataset.team, t = BY_ID[id];
+        if (state.open.has(id)) state.open.delete(id);
+        else { state.open.add(id); if (t) track(`${t.mus.length ? "เปิดทีม" : "ไม่มีทีมแก้"}/${id}`, `${t.mus.length ? "เปิดทีม" : "ขอทีมแก้"}: ${teamLabel(t)}`); }
+        rerenderTeam(id);
+      }
     });
     $("#lb").addEventListener("click", (e) => {
       if (e.target.tagName === "IMG") { $("#lb").classList.toggle("zoom"); return; }
@@ -320,6 +392,12 @@
     if (location.hash) openFromHash();
   }
 
+  if (window.GC_CODE) {
+    const g = document.createElement("script");
+    g.async = true; g.src = "https://gc.zgo.at/count.js";
+    g.dataset.goatcounter = `https://${window.GC_CODE}.goatcounter.com/count`;
+    document.head.appendChild(g);
+  }
   bind();
   load();
 })();
