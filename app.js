@@ -101,7 +101,7 @@
     const open = state.runesOpen.has(rid);
     const spdOf = Object.fromEntries((x.runes || []).map((r) => [r.m, r.spd]));
     const icons = x[otherSide].map((k) => monHTML(k, otherSide === "atk" && spdOf[k] ? `SPD +${spdOf[k]}` : "")).join("");
-    const rk = other ? `อันดับ ${other.rank}` : "";
+    const rk = other ? `${otherSide === "atk" ? "ทีมตีอันดับ" : "เด็คอันดับ"} ${other.rank}` : "";
     const atkSpd = t.side === "atk" && x.runes && x.runes.some((r) => r.spd)
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd != null ? "+" + r.spd : "-"}`).join(" · ")}</div>` : "";
     const runes = open
