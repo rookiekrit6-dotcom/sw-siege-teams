@@ -168,3 +168,15 @@ button.head[aria-expanded="true"] .rk::after{content:"▾"}
 .g-row img{border-radius:6px;width:28px;height:28px}
 .g-n{display:inline-grid;place-items:center;width:1.3rem;height:1.3rem;border-radius:50%;background:rgba(255,200,80,.3);font-size:.75rem;font-weight:700}
 .rk .b4{display:block;font-size:.62rem;font-weight:700;color:#e0a63a;line-height:1;margin-top:2px}
+/* บ้าน 5★ / 4★ */
+.basetabs{display:flex;gap:6px;margin-top:6px}
+.basetabs button{flex:1;min-height:40px;border:2px solid var(--line);border-radius:8px;background:var(--card);font-weight:800;cursor:pointer;color:var(--mute)}
+.basetabs button[aria-pressed="true"]{border-color:var(--gold);background:var(--gold);color:#1a1405}
+.stats-mode .basetabs{display:none}
+/* จอกว้าง: 2 คอลัมน์ */
+@media (min-width:900px){
+  main{max-width:1180px}
+  #list{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:start}
+  #list>.team{margin-bottom:0}
+  #list>.team:has(.det),#list>.empty,#list>.results-btn{grid-column:1/-1}
+}

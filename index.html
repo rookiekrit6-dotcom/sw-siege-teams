@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20261123205141">
+<link rel="stylesheet" href="style.css?v=20261123205759">
 </head>
 <body>
 <main id="top">
@@ -48,6 +48,10 @@
       <button type="button" data-m="atk" aria-pressed="false">ทีมโจมตี</button>
       <button type="button" data-m="stats" aria-pressed="false">📊 สถิติ</button>
     </div>
+    <div class="basetabs" id="baseSeg" role="group" aria-label="เลือกบ้าน">
+      <button type="button" data-b="5" aria-pressed="true">บ้าน 5★</button>
+      <button type="button" data-b="4" aria-pressed="false">บ้าน 4★</button>
+    </div>
   </div>
 
   <div class="search-row">
@@ -70,12 +74,6 @@
   <div class="filter-row">
     <div class="els" id="els" role="group" aria-label="กรองทีมตามธาตุ"></div>
     <span class="divider" aria-hidden="true"></span>
-    <div class="seg" id="baseSeg" role="group" aria-label="กรองตามบ้าน">
-      <button type="button" data-b="" aria-pressed="true">ทุกบ้าน</button>
-      <button type="button" data-b="5" aria-pressed="false">บ้าน 5★</button>
-      <button type="button" data-b="4" aria-pressed="false">บ้าน 4★</button>
-    </div>
-    <span class="divider" aria-hidden="true"></span>
     <div class="seg" id="dataSeg" role="group" aria-label="กรองตามข้อมูลรูน">
       <button type="button" data-d="" aria-pressed="true">ทุกทีม</button>
       <button type="button" data-d="with" aria-pressed="false">มีข้อมูลรูน</button>
@@ -88,7 +86,7 @@
   <div class="cnt" id="cnt" aria-live="polite">กำลังโหลดข้อมูล…</div>
   <div id="list"></div>
 
-  <p class="note">อันดับถอดจากภาพหน้าจอเว็บ SWLens (ตั้งรับ 1–100 · โจมตี 1–98) อันดับที่ต่อท้ายจากนั้นคือเด็คที่สมาชิกกิลด์ส่งข้อมูลมาเพิ่ม ต่อท้ายตามลำดับที่ส่ง ทีมโจมตีขาดอันดับ 68 และ 69 เพราะภาพไม่ครบ ธาตุกำหนดจากสีกรอบไอคอนโดยอัตโนมัติ อาจผิดได้บ้าง ข้อมูลทีมตีและรูนมาจากสมาชิกกิลด์ ตัดชื่อผู้เล่นออกทุกครั้ง ไอคอนมอนสเตอร์เป็นลิขสิทธิ์ของ Com2uS</p>
+  <p class="note">เรียงจากทีมยอดนิยมใน SWLens ก่อน ตามด้วยทีมที่สมาชิกกิลด์ส่งข้อมูลมาเพิ่ม ธาตุกำหนดจากสีกรอบไอคอนโดยอัตโนมัติ อาจผิดได้บ้าง ข้อมูลทีมตีและรูนมาจากสมาชิกกิลด์ ตัดชื่อผู้เล่นออกทุกครั้ง ไอคอนมอนสเตอร์เป็นลิขสิทธิ์ของ Com2uS</p>
 </main>
 
 <button type="button" id="toTop" class="to-top" aria-label="กลับขึ้นบนสุด" hidden>↑</button>
@@ -99,8 +97,8 @@
 </div>
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script>window.APP_V = "20261123205141"; window.GC_CODE = ""; /* รหัส GoatCounter เช่น "swsiege" (ว่าง = ไม่นับ) */</script>
-<script src="app.js?v=20261123205141" defer></script>
+<script>window.APP_V = "20261123205759"; window.GC_CODE = ""; /* รหัส GoatCounter เช่น "swsiege" (ว่าง = ไม่นับ) */</script>
+<script src="app.js?v=20261123205759" defer></script>
 <!-- Cloudflare Web Analytics (ไม่ใช้คุกกี้) -->
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "9b18064985ae4c728ce87917ae65e707"}'></script>
 </body>

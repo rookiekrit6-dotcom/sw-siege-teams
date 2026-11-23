@@ -8,7 +8,7 @@
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  const state = { mode: "def", q: "", el: "", data: "", base: "", season: "", pick: [], pq: "", pel: "", open: new Set(), runesOpen: new Set() };
+  const state = { mode: "def", q: "", el: "", data: "", base: (() => { try { return localStorage.getItem("base.v1") === "4" ? "4" : "5"; } catch (e) { return "5"; } })(), season: "", pick: [], pq: "", pel: "", open: new Set(), runesOpen: new Set() };
   let MON = {}, TEAMS = { def: [], atk: [] }, BY_ID = {}, UPDATED = "", SEASONS = [], MUS = [];
 
   /* ---------- helpers ---------- */
@@ -146,7 +146,7 @@
   /* ---------- filtering ---------- */
   function baseFilter(t, ignorePick) {
     const mus = musFor(t);
-    if (state.base && t.base !== state.base) return false;
+    if (t.base !== state.base) return false;
     if (state.data === "with" && !mus.length) return false;
     if (state.data === "without" && t.mus.length) return false;
     if (state.data === "mine" && !(BOX && (t.side === "atk" ? mus.length && ownsAll(t.m) : mus.some((x) => ownsAll(x.atk))))) return false;
@@ -169,7 +169,7 @@
     const miss = BOX ? x.atk.filter((k) => !boxHas(k)) : [];
     const mine = BOX ? (miss.length ? `<span class="my-sum no">ขาด ${miss.length} ตัว</span>` : '<span class="my-sum ok">✓ มีครบ</span>') : "";
     const mySpd = BOX && t.side === "atk" ? `<div class="mu-line">ของคุณ: ${x.atk.map((k) => { const v = boxSpd(k); return `${esc(monName(k))} ${v === undefined ? "ไม่มี" : "+" + v}`; }).join(" · ")}</div>` : "";
-    const rk = other ? (otherSide === "atk" ? `ทีมตีอันดับ ${other.rank}` : `เด็คอันดับ ${other.rank} · บ้าน ${x.base}★`) : "";
+    const rk = "";
     const atkSpd = t.side === "atk" && x.runes && x.runes.some((r) => r.spd)
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd != null ? "+" + r.spd : "-"}`).join(" · ")}</div>` : "";
     const g = x.guide && x.guide.first && x.guide.first.length
@@ -181,7 +181,7 @@
       : "";
     return `<div class="mu">
       <div class="mu-top"><div class="mons">${icons}</div>
-        <div class="mu-meta"><span class="rkb">${rk}</span>${mine}${x.season ? `<span class="season">${esc(x.season)}</span>` : ""}${x.date ? `<span>ตีเมื่อ ${esc(thDate(x.date))}</span>` : ""}${isOld(x.date) ? OLD_TAG : ""}${isNew(x.added) && !isOld(x.date) ? '<span class="new">ใหม่</span>' : ""}
+        <div class="mu-meta">${mine}${x.season ? `<span class="season">${esc(x.season)}</span>` : ""}${x.date ? `<span>ตีเมื่อ ${esc(thDate(x.date))}</span>` : ""}${isOld(x.date) ? OLD_TAG : ""}${isNew(x.added) && !isOld(x.date) ? '<span class="new">ใหม่</span>' : ""}
           <button type="button" class="run-btn" data-runes="${esc(rid)}" aria-expanded="${open}">${open ? "ซ่อนรูน" : "ดูรูนทีมตี"}</button></div></div>
       ${atkSpd}${mySpd}${g}${x.note ? `<div class="mu-line note-line">💬 ${esc(x.note)}</div>` : ""}
       ${runes}</div>`;
@@ -206,7 +206,7 @@
   }
 
   function teamHTML(t) {
-    const rk = `<span class="rk">${t.rank}${t.base === "4" ? '<small class="b4">4★</small>' : ""}</span>`;
+    const rk = "";
     const mons = `<span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span>`;
     const mus = musFor(t);
     const open = state.open.has(t.id);
@@ -232,11 +232,11 @@
   function render() {
     document.body.classList.toggle("stats-mode", state.mode === "stats");
     if (state.mode === "stats") { renderStats(); return; }
-    const all = TEAMS[state.mode];
+    const all = TEAMS[state.mode].filter((t) => t.base === state.base);
     const rows = visibleTeams();
     const nData = all.filter((t) => musFor(t).length).length;
     const filtered = rows.length !== all.length;
-    $("#cnt").textContent = (filtered ? `แสดง ${rows.length} จาก ` : "ทั้งหมด ") + `${all.length} ทีม · มีข้อมูลรูน ${nData} ทีม`;
+    $("#cnt").textContent = (filtered ? `แสดง ${rows.length} จาก ` : "ทั้งหมด ") + `${all.length} ทีม (บ้าน ${state.base}★) · มีข้อมูลรูน ${nData} ทีม`;
     $("#list").innerHTML = rows.map(teamHTML).join("") || '<div class="empty">ไม่พบทีมที่ตรงกับตัวกรอง ลองล้างช่องค้นหา ตัวที่เลือก หรือเลือกธาตุอื่น</div>';
     renderChips();
     const done = $("#pickDone");
@@ -270,7 +270,7 @@
     const bars = top.map(([k, n]) => `<div class="st-bar">${monHTML(k)}<span class="st-track"><span style="width:${Math.max(8, (n / max) * 100)}%"></span></span><b>${n}</b></div>`).join("");
     // เด็คที่มีทีมแก้มากสุด
     const most = [...defs].sort((a, b) => b.mus.length - a.mus.length || (a.rank ?? 1e9) - (b.rank ?? 1e9)).slice(0, 5);
-    const decks = most.map((t) => `<a class="st-deck" href="#${esc(t.id)}"><span class="rk">${t.rank}</span><span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span><span class="tag">${t.mus.length} ทีมแก้</span></a>`).join("");
+    const decks = most.map((t) => `<a class="st-deck" href="#${esc(t.id)}"><span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span><span class="tag">${t.mus.length} ทีมแก้</span></a>`).join("");
     // ข้อมูลตามปี
     const yrs = {};
     MUS.forEach((x) => { const y = x.date ? String(Number(x.date.slice(0, 4)) + 543) : "ไม่ระบุ"; yrs[y] = (yrs[y] || 0) + 1; });
@@ -329,6 +329,10 @@
   function setPressed(sel, attr, val) {
     document.querySelectorAll(sel).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset[attr] === val)));
   }
+  function setBase(b) {
+    state.base = b === "4" ? "4" : "5"; setPressed("#baseSeg button", "b", state.base);
+    try { localStorage.setItem("base.v1", state.base); } catch (e) {}
+  }
   function setMode(m) { state.mode = m; setPressed("#tabs button", "m", m); }
 
   function toast(msg) {
@@ -351,9 +355,9 @@
   }
 
   function resetFilters() {
-    Object.assign(state, { q: "", el: "", data: "", base: "", season: "", pick: [], pq: "", pel: "" });
+    Object.assign(state, { q: "", el: "", data: "", season: "", pick: [], pq: "", pel: "" });
     $("#q").value = ""; $("#pq").value = ""; $("#season").value = "";
-    setPressed("#els button", "el", ""); setPressed("#pels button", "el", ""); setPressed("#dataSeg button", "d", ""); setPressed("#baseSeg button", "b", "");
+    setPressed("#els button", "el", ""); setPressed("#pels button", "el", ""); setPressed("#dataSeg button", "d", "");
   }
 
   function openFromHash() {
@@ -361,7 +365,7 @@
     if (id === "stats") { setMode("stats"); render(); window.scrollTo(0, 0); try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} return; }
     const t = BY_ID[id];
     if (!t) return;
-    setMode(t.side); resetFilters();
+    setMode(t.side); resetFilters(); setBase(t.base);
     state.open.add(t.id);
     render(); renderPicker();
     // เปิดจากลิงก์แล้วลบ #... ออกจากที่อยู่ เพื่อให้กดรีเฟรชแล้วกลับไปหน้าแรกตามปกติ
@@ -391,6 +395,7 @@
   function closeLightbox() { const lb = $("#lb"); lb.hidden = true; lb.classList.remove("zoom"); }
 
   function bind() {
+    setBase(state.base);
     elChips("#els", (v) => { state.el = v; render(); renderPicker(); });
     elChips("#pels", (v) => { state.pel = v; renderPicker(); });
     $("#tabs").addEventListener("click", (e) => {
@@ -400,7 +405,7 @@
     });
     $("#baseSeg").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
-      state.base = b.dataset.b; setPressed("#baseSeg button", "b", state.base); render(); renderPicker();
+      setBase(b.dataset.b); render(); renderPicker();
     });
     $("#dataSeg").addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
