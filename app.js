@@ -201,7 +201,7 @@
   function detailHTML(t) {
     const mus = musFor(t);
     const title = t.side === "atk" ? `ตีชนะทีมตั้งรับ ${mus.length} ทีม` : `ทีมตีที่ชนะเด็คนี้ ${mus.length} ทีม`;
-    return `<div class="det" id="det-${esc(t.id)}"><h3>${title}</h3>${mus.map((x) => matchupHTML(t, x)).join("")}
+    return `<div class="det" id="det-${esc(t.id)}"><h3><img class="h3-art" src="img/art/cheer.webp" alt="" width="34" height="34">${title}</h3>${mus.map((x) => matchupHTML(t, x)).join("")}
       <div class="det-foot"><button type="button" class="link-btn" data-share="${esc(t.id)}">🔗 คัดลอกลิงก์ทีมนี้</button></div></div>`;
   }
 
@@ -214,7 +214,7 @@
       const msg = t.side === "def" ? "ยังไม่มีทีมแก้เด็คนี้" : "ยังไม่มีข้อมูลว่าทีมนี้ตีชนะเด็คไหน";
       return `<article class="team" id="t-${esc(t.id)}">
       <button type="button" class="head" data-team="${esc(t.id)}" aria-expanded="${open}" aria-controls="det-${esc(t.id)}">${rk}${mons}</button>
-      ${open ? `<div class="det" id="det-${esc(t.id)}"><p class="nodata">${msg} ถ้าเคยตีชนะ ส่งภาพหน้าจอมาได้เลย</p>
+      ${open ? `<div class="det" id="det-${esc(t.id)}"><p class="nodata"><img class="nd-art" src="img/art/sleep.webp" alt="" width="56" height="44">${msg} ถ้าเคยตีชนะ ส่งภาพหน้าจอมาได้เลย</p>
         <div class="det-foot"><a class="link-btn" href="${FORM_URL}" target="_blank" rel="noopener">📤 ส่งข้อมูลทีมนี้</a><button type="button" class="link-btn" data-share="${esc(t.id)}">🔗 คัดลอกลิงก์</button></div></div>` : ""}</article>`;
     }
     let label = t.side === "atk" ? `ตีได้ ${mus.length} ทีม` : `มีทีมแก้ ${mus.length} ทีม`;
@@ -237,7 +237,7 @@
     const nData = all.filter((t) => musFor(t).length).length;
     const filtered = rows.length !== all.length;
     $("#cnt").textContent = (filtered ? `แสดง ${rows.length} จาก ` : "ทั้งหมด ") + `${all.length} ทีม (บ้าน ${state.base}★) · มีข้อมูลรูน ${nData} ทีม`;
-    $("#list").innerHTML = rows.map(teamHTML).join("") || '<div class="empty">ไม่พบทีมที่ตรงกับตัวกรอง ลองล้างช่องค้นหา ตัวที่เลือก หรือเลือกธาตุอื่น</div>';
+    $("#list").innerHTML = rows.map(teamHTML).join("") || '<div class="empty"><img class="empty-art" src="img/art/search.webp" alt="" width="110" height="110"><br>ไม่พบทีมที่ตรงกับตัวกรอง ลองล้างช่องค้นหา ตัวที่เลือก หรือเลือกธาตุอื่น</div>';
     renderChips();
     const done = $("#pickDone");
     done.textContent = `ดูผลลัพธ์ (${rows.length} ทีม)`;
