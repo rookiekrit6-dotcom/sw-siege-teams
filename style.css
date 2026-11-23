@@ -201,3 +201,6 @@ body{background:var(--bg) url(img/art/bg-light.webp) center top/cover fixed}
 .team .head .m img{width:78px;height:78px;border-radius:10px;border-width:3px;margin-bottom:4px}
 .team .head .badges{flex-basis:100%;flex-direction:row;justify-content:center}
 @media (max-width:420px){.team .head .mons{gap:12px}.team .head .m{width:80px}.team .head .m img{width:74px;height:74px}}
+.tag.seen{color:var(--gold);border-color:var(--gold)}
+.g-cnt{opacity:.75;margin-left:4px}
+#season{min-height:36px;border:1px solid var(--line);border-radius:99px;background:var(--card);padding:0 10px}

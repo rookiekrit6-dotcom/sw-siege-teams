@@ -128,10 +128,32 @@ def add_monster(mid, mons, dry):
     return key
 
 
+def guide_add(g, moves):
+    """รวมสถิติเทิร์นแรกหลายเกม: นับลำดับสกิลของแต่ละตัว แล้วเลือกแบบที่เจอบ่อยสุด"""
+    g = g or {"games": 0, "order": [], "seqs": {}}
+    if "seqs" not in g:  # รูปแบบเก่า (เกมเดียว)
+        old = g.get("first") or []
+        g = {"games": g.get("games", 1), "order": [f["m"] for f in old],
+             "seqs": {f["m"]: {json.dumps(f.get("steps") or [{"s": f["s"], "t": f.get("t")}], ensure_ascii=False): g.get("games", 1)} for f in old}}
+    g["games"] += 1
+    for f in moves:
+        if f["m"] not in g["order"]:
+            g["order"].append(f["m"])
+        k = json.dumps(f["steps"], ensure_ascii=False)
+        g["seqs"].setdefault(f["m"], {})[k] = g["seqs"].get(f["m"], {}).get(k, 0) + 1
+    g["first"] = []
+    for m in g["order"]:
+        if m in g["seqs"]:
+            k, c = max(g["seqs"][m].items(), key=lambda kv: kv[1])
+            g["first"].append({"m": m, "steps": json.loads(k), "n": c})
+    return g
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("logs", nargs="+")
     ap.add_argument("--dry", action="store_true")
+    ap.add_argument("--practice", action="store_true", help="นำเข้ารีเพลย์หน้าทดลองต่อสู้ด้วย (ปกติข้าม)")
     a = ap.parse_args()
     mons = json.load(open(os.path.join(D, "monsters.json"), encoding="utf-8"))
     by_fam = {}
@@ -175,12 +197,14 @@ def main():
                         replays[ref].update(siege=True, win=win, j=j,
                                             date=datetime.datetime.fromtimestamp(resp.get("tvalue") or 0, BKK).date().isoformat())
     data = json.load(open(os.path.join(D, "matchups.json"), encoding="utf-8"))
-    have = {x.get("ref") for x in data["matchups"] if x.get("ref")}
+    have = {r for x in data["matchups"] for r in ([x.get("ref")] + (x.get("refs") or [])) if r}
     n = 1 + max([int(x["id"][1:]) for x in data["matchups"] if x["id"][1:].isdigit()] or [0])
     today = datetime.date.today().isoformat()
     missing, added, skipped, new_mons = set(), 0, 0, []
     for ref, rp in sorted(replays.items(), key=lambda kv: str(kv[0])):
         if ref in have:
+            continue
+        if not rp.get("siege") and not a.practice:
             continue
         if ref not in runes or len(runes[ref]) != 3:
             skipped += 1
@@ -202,6 +226,14 @@ def main():
         if rp.get("siege") and rp.get("win") != 1:
             skipped += 1
             continue
+        same = next((x for x in data["matchups"] if x.get("guide") and sorted(x["atk"]) == sorted(atk) and sorted(x["def"]) == sorted(dfn)), None)
+        if rp.get("siege") and same:
+            same["guide"] = guide_add(same["guide"], first_moves(rp["j"], atk, dfn))
+            same.setdefault("refs", []).append(ref)
+            if (rp["date"] or "") > (same.get("date") or ""):
+                same["date"] = rp["date"]
+            have.add(ref); added += 1
+            continue
         summ = {by_fam[fam(mid)]: s for mid, s in runes[ref]}
         mu = {
             "id": f"m{n}", "ref": ref, "src": "swex", "atk": atk, "def": dfn, "date": rp["date"], "added": today,
@@ -209,9 +241,9 @@ def main():
             "runes": [dict(m=k, spd=summ[k]["st"]["spd"], rs=summ[k]) for k in atk],
         }
         if rp.get("siege"):
-            mu["guide"] = {"games": 1, "first": first_moves(rp["j"], atk, dfn)}
+            mu["guide"] = guide_add(None, first_moves(rp["j"], atk, dfn))
         data["matchups"].append(mu)
-        n += 1; added += 1
+        n += 1; added += 1; have.add(ref)
     print(f"รีเพลย์ {len(replays)} · มีรูนทีมตี {len(runes)} · เพิ่มใหม่ {added} · ข้าม {skipped}")
     if missing:
         print("มอนที่ยังไม่มีในเว็บ (unit_master_id):", sorted(missing))

@@ -53,3 +53,8 @@
 - SPD จากรูน = SPD แบนทุกจุด (หลัก/prefix/รอง + เจียร) + ชุดสวิฟท์ ceil(สปีดฐาน × 25%)
 - มอนใหม่ที่เพิ่มด้วย `--new-mon` ต้องใส่ `id` และ `en` เพิ่มเองใน monsters.json (หาเลขได้จาก swarfarm.com)
 - หน้าวิธีทำไฟล์: `guide.html`
+
+## ระหว่างสงคราม (SWEX)
+- เด็คศัตรู: เปิด SWEX แล้วกดดูฐานกิลด์ศัตรู → `python tools/import_siege.py full_log.txt` → `data/sightings.json` (นับ "เจอในสงคราม N ครั้ง", เดาบ้าน 4★ จากดาวมอน)
+- รีเพลย์ที่ตีชนะ: กดดูรีเพลย์ในเกม → `python tools/import_swex.py full_log.txt` (รวมไกด์เทิร์นแรกเป็นสถิติหลายเกม; หน้าทดลองต่อสู้ต้องใส่ `--practice`)
+- มอนใหม่เพิ่มอัตโนมัติจาก `tools/swarfarm_monsters.json`; ชื่อไทยใส่ใน `tools/th_names.json`

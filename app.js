@@ -97,7 +97,11 @@
   }
 
   /* ---------- data model ---------- */
-  function build(monsters, ranked, mu) {
+  // ซีซั่น = เดือนที่ตี (เช่น "พ.ย. 69") เรียงใหม่→เก่า
+  const TH_M = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  const seasonOf = (d) => `${TH_M[+d.slice(5, 7) - 1]} ${(+d.slice(0, 4) + 543) % 100}`;
+  const seasonKey = (s) => { const [m, y] = s.split(" "); return +y * 100 + TH_M.indexOf(m); };
+  function build(monsters, ranked, mu, sg) {
     MON = monsters;
     UPDATED = mu.updated || "";
     MUS = mu.matchups;
@@ -117,9 +121,16 @@
       x._atk = reg.atk.get(keyOf(x.atk));
       x._def = reg.def.get(keyOf(x.def));
     }
+    // เด็คศัตรูที่เจอในสงคราม (นำเข้าจาก SWEX): นับจำนวนครั้ง + เด็คใหม่ที่ยังไม่มีในรายการ
+    let si = 0;
+    for (const [k, e] of Object.entries((sg && sg.decks) || {})) {
+      if (!e.m.every((m) => MON[m])) continue;
+      if (!reg.def.has(k)) reg.def.set(k, { side: "def", id: `def-s${++si}`, rank: null, pop: "", m: e.m, mus: [], sb: e.b });
+      const t = reg.def.get(k); t.seen = e.n; t.sb = e.b;
+    }
     const B4 = new Set(ranked.base4 || []);
     const B4A = new Set(ranked.base4_atk || []);
-    for (const t of reg.def.values()) t.base = B4.has(keyOf(t.m)) ? "4" : "5";
+    for (const t of reg.def.values()) t.base = B4.has(keyOf(t.m)) ? "4" : t.swlens ? "5" : t.sb || "5";
     for (const t of reg.atk.values()) t.base = B4A.has(keyOf(t.m)) ? "4" : "5";
     for (const x of mu.matchups) x.base = x._def.base;
     BY_ID = {};
@@ -138,7 +149,8 @@
       }
       TEAMS[side] = arr;
     }
-    SEASONS = [...new Set(mu.matchups.map((x) => x.season).filter(Boolean))].sort().reverse();
+    for (const x of mu.matchups) if (!x.season && x.date) x.season = seasonOf(x.date);
+    SEASONS = [...new Set(mu.matchups.map((x) => x.season).filter(Boolean))].sort((a, b) => seasonKey(b) - seasonKey(a));
   }
 
   const musFor = (t) => (state.season ? t.mus.filter((x) => x.season === state.season) : t.mus);
@@ -174,7 +186,7 @@
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd != null ? "+" + r.spd : "-"}`).join(" · ")}</div>` : "";
     const g = x.guide && x.guide.first && x.guide.first.length
       ? `<div class="guide"><b>🎯 เทิร์นแรกกดสกิลอะไร</b> <small>(จาก ${x.guide.games} เกม)</small>${x.guide.first.map((f, i) =>
-          `<div class="g-row"><span class="g-n">${i + 1}</span><img src="${esc((MON[f.m] || {}).img || "")}" alt="" width="28" height="28"><span>${esc(monName(f.m))} ${(f.steps || [f]).map((st) => `<b>S${st.s}</b>${st.t ? ` ใส่${esc(monName(st.t))}` : ""}`).join(" → ")}</span></div>`).join("")}</div>`
+          `<div class="g-row"><span class="g-n">${i + 1}</span><img src="${esc((MON[f.m] || {}).img || "")}" alt="" width="28" height="28"><span>${esc(monName(f.m))} ${(f.steps || [f]).map((st) => `<b>S${st.s}</b>${st.t ? ` ใส่${esc(monName(st.t))}` : ""}`).join(" → ")}${x.guide.games > 1 ? ` <small class="g-cnt">${f.n || 1}/${x.guide.games} เกม</small>` : ""}</span></div>`).join("")}</div>`
       : "";
     const runes = open
       ? (x.runes.some((r) => r.img) ? '<p class="hint tap">แตะรูปเพื่อขยาย</p>' : "") + `<div class="runes">${x.runes.map(runeCard).join("")}</div>`
@@ -205,6 +217,7 @@
       <div class="det-foot"><button type="button" class="link-btn" data-share="${esc(t.id)}">🔗 คัดลอกลิงก์ทีมนี้</button></div></div>`;
   }
 
+  const seenTag = (t) => (t.seen ? `<span class="tag seen">👀 เจอในสงคราม ${t.seen} ครั้ง</span>` : "");
   function teamHTML(t) {
     const rk = "";
     const mons = `<span class="mons">${t.m.map((k) => monHTML(k)).join("")}</span>`;
@@ -213,7 +226,7 @@
     if (!mus.length) {
       const msg = t.side === "def" ? "ยังไม่มีทีมแก้เด็คนี้" : "ยังไม่มีข้อมูลว่าทีมนี้ตีชนะเด็คไหน";
       return `<article class="team" id="t-${esc(t.id)}">
-      <button type="button" class="head" data-team="${esc(t.id)}" aria-expanded="${open}" aria-controls="det-${esc(t.id)}">${rk}${mons}</button>
+      <button type="button" class="head" data-team="${esc(t.id)}" aria-expanded="${open}" aria-controls="det-${esc(t.id)}">${rk}${mons}${t.seen ? `<span class="badges">${seenTag(t)}</span>` : ""}</button>
       ${open ? `<div class="det" id="det-${esc(t.id)}"><p class="nodata"><img class="nd-art" src="img/art/sleep.webp" alt="" width="56" height="44">${msg} ถ้าเคยตีชนะ ส่งภาพหน้าจอมาได้เลย</p>
         <div class="det-foot"><a class="link-btn" href="${FORM_URL}" target="_blank" rel="noopener">📤 ส่งข้อมูลทีมนี้</a><button type="button" class="link-btn" data-share="${esc(t.id)}">🔗 คัดลอกลิงก์</button></div></div>` : ""}</article>`;
     }
@@ -225,7 +238,7 @@
     }
     return `<article class="team has" id="t-${esc(t.id)}">
       <button type="button" class="head" data-team="${esc(t.id)}" aria-expanded="${open}" aria-controls="det-${esc(t.id)}">${rk}${mons}
-        <span class="badges"><span class="tag">${label}</span>${myBadge}</span></button>
+        <span class="badges"><span class="tag">${label}</span>${seenTag(t)}${myBadge}</span></button>
       ${open ? detailHTML(t) : ""}</article>`;
   }
 
@@ -512,8 +525,8 @@
   async function load() {
     const get = (u) => fetch(u, { cache: "no-cache" }).then((r) => { if (!r.ok) throw new Error(u + " " + r.status); return r.json(); });
     try {
-      const [monsters, ranked, mu] = await Promise.all([get("data/monsters.json"), get("data/ranked.json"), get("data/matchups.json")]);
-      build(monsters, ranked, mu);
+      const [monsters, ranked, mu, sg] = await Promise.all([get("data/monsters.json"), get("data/ranked.json"), get("data/matchups.json"), get("data/sightings.json").catch(() => ({ decks: {} }))]);
+      build(monsters, ranked, mu, sg);
     } catch (e) {
       $("#cnt").textContent = "";
       $("#list").innerHTML = '<div class="err">โหลดข้อมูลไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง</div>';
