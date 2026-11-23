@@ -3,12 +3,14 @@
 ตัวอย่าง:
   python tools/add_matchup.py \
     --atk "มิฮยาง,โดว่า,ราคิ" --def "เพลตี้,ไอรีน,unk2" \
-    --date 2025-10-28 \
+    --date 2025-10-28 --season SS21 --spd 281,325,131 --note "ต้องได้เทิร์นแรก" \
     --runes shots/rune1.jpg shots/rune2.jpg shots/rune3.jpg
 
 - ชื่อมอนต้องมีอยู่ใน data/monsters.json (ถ้าเป็นมอนใหม่ ให้เพิ่มด้วย --new-mon ก่อน)
 - --runes: ภาพหน้ารายละเอียดมอนของทีมตี 3 ภาพ เรียงตาม --atk
   ระบบตัดเฉพาะกรอบสเตตัส/รูน/สกิล ไม่เอาชื่อผู้เล่นและรูปโปรไฟล์
+- --spd: สปีดรวม (ค่าขาว + ค่าเขียว) ของทีมตี เรียงตาม --atk
+- --season / --note ไม่บังคับ (note มาจากช่องหมายเหตุในฟอร์ม ห้ามมีชื่อผู้เล่น)
 - ทีมที่ไม่มีภาพรูนครบ 3 ตัว จะไม่ถูกเพิ่ม (ตามกติกาของเว็บ)
 
 เพิ่มมอนที่ไม่มีในรายชื่อ (ตัดไอคอนจากภาพหน้าจอ):
@@ -68,13 +70,17 @@ def add(a):
     data = load("matchups.json")
     n = 1 + max([int(x["id"][1:]) for x in data["matchups"]] or [0])
     mid = f"m{n}"
+    spd = [int(v) for v in a.spd.split(",")] if a.spd else [None, None, None]
+    if len(spd) != 3:
+        sys.exit("--spd ต้องมี 3 ค่า")
     runes = []
-    for i, (mon, src) in enumerate(zip(atk, a.runes), 1):
+    for i, (mon, src, sp) in enumerate(zip(atk, a.runes, spd), 1):
         fn = f"img/runes/{mid}-{i}.jpg"
         save_jpeg(crop(Image.open(src), RUNE_PANEL), os.path.join(ROOT, fn), width=720, quality=74)
-        runes.append({"m": mon, "img": fn})
+        runes.append({"m": mon, "img": fn, "spd": sp})
     today = datetime.date.today().isoformat()
-    data["matchups"].append({"id": mid, "atk": atk, "def": dfn, "date": a.date, "added": today, "runes": runes})
+    data["matchups"].append({"id": mid, "atk": atk, "def": dfn, "date": a.date, "added": today,
+                             "season": a.season, "note": a.note or "", "runes": runes})
     data["updated"] = today
     with open(os.path.join(D, "matchups.json"), "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
@@ -85,6 +91,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--atk"); p.add_argument("--def", dest="dfn"); p.add_argument("--date")
     p.add_argument("--runes", nargs="*")
+    p.add_argument("--spd"); p.add_argument("--season"); p.add_argument("--note")
     p.add_argument("--new-mon"); p.add_argument("--el", choices=["water", "fire", "wind", "light", "dark"])
     p.add_argument("--from", dest="src"); p.add_argument("--box")
     a = p.parse_args()

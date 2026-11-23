@@ -18,17 +18,22 @@
    "runes": [
     {
      "m": "วีรัด",
-     "img": "img/runes/m1-1.jpg"
+     "img": "img/runes/m1-1.jpg",
+     "spd": 282
     },
     {
      "m": "ไฮอาเนส",
-     "img": "img/runes/m1-2.jpg"
+     "img": "img/runes/m1-2.jpg",
+     "spd": 281
     },
     {
      "m": "โฮมุนคูลัส (สนับสนุน)",
-     "img": "img/runes/m1-3.jpg"
+     "img": "img/runes/m1-3.jpg",
+     "spd": 281
     }
-   ]
+   ],
+   "season": null,
+   "note": ""
   },
   {
    "id": "m2",
@@ -47,17 +52,22 @@
    "runes": [
     {
      "m": "แฟรน",
-     "img": "img/runes/m2-1.jpg"
+     "img": "img/runes/m2-1.jpg",
+     "spd": 312
     },
     {
      "m": "ชิลลิ่ง",
-     "img": "img/runes/m2-2.jpg"
+     "img": "img/runes/m2-2.jpg",
+     "spd": 315
     },
     {
      "m": "เอลชาเรียน",
-     "img": "img/runes/m2-3.jpg"
+     "img": "img/runes/m2-3.jpg",
+     "spd": 278
     }
-   ]
+   ],
+   "season": null,
+   "note": ""
   },
   {
    "id": "m3",
@@ -76,17 +86,22 @@
    "runes": [
     {
      "m": "มิฮยาง",
-     "img": "img/runes/m3-1.jpg"
+     "img": "img/runes/m3-1.jpg",
+     "spd": 281
     },
     {
      "m": "โดว่า",
-     "img": "img/runes/m3-2.jpg"
+     "img": "img/runes/m3-2.jpg",
+     "spd": 325
     },
     {
      "m": "ราคิ",
-     "img": "img/runes/m3-3.jpg"
+     "img": "img/runes/m3-3.jpg",
+     "spd": 131
     }
-   ]
+   ],
+   "season": null,
+   "note": ""
   }
  ]
 }

@@ -7,17 +7,21 @@
 <meta name="description" content="รวมทีมยอดนิยมโหมดสงครามแห่งการยึดครอง Summoners War พร้อมทีมตีที่ชนะและรูนที่ใช้">
 <meta property="og:title" content="ทีมสงครามแห่งการยึดครอง">
 <meta property="og:description" content="ทีมตั้งรับ ทีมตี และรูนที่ใช้ชนะจริง">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<meta property="og:image" content="https://siege.thaimapgame.com/icons/icon-512.png">
+<meta name="theme-color" content="#9c2b2b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
-<main>
+<main id="top">
   <header>
     <h1>ทีมสงครามแห่งการยึดครอง</h1>
-    <p class="sub">ทีมยอดนิยมเรียงตามอันดับ กดที่ทีมที่มีป้ายเพื่อดูทีมที่ตีชนะและรูนที่ใช้ <span id="updated"></span></p>
+    <p class="sub">ทีมที่มีป้ายกดดูทีมที่ตีชนะและรูนที่ใช้ได้ <span id="updated"></span></p>
     <a class="submit" href="https://docs.google.com/forms/d/e/1FAIpQLSc1rqq_RnKAq3Cj2cuzaY803iS1UplVPSjjcH0cPlXlvbo0Ig/viewform" target="_blank" rel="noopener">📤 ส่งข้อมูลทีมตีที่ชนะ</a>
   </header>
 
@@ -34,23 +38,39 @@
       <input type="search" id="pq" placeholder="พิมพ์กรองไอคอน" aria-label="กรองไอคอนมอนสเตอร์" autocomplete="off">
       <button type="button" id="pickClear" class="link-btn">ล้างที่เลือก</button>
     </div>
-    <p class="hint">เลือกได้สูงสุด 3 ตัว เว็บจะแสดงเฉพาะทีมที่มีครบทุกตัวที่เลือก</p>
+    <div class="els small" id="pels" role="group" aria-label="กรองไอคอนตามธาตุ"></div>
+    <p class="hint" id="pickHint">เลือกได้สูงสุด 3 ตัว เลือกแล้วไอคอนจะเหลือเฉพาะตัวที่เคยอยู่ทีมเดียวกัน</p>
     <div class="pick-grid" id="pickGrid"></div>
+    <button type="button" class="results-btn" id="pickDone">ดูผลลัพธ์</button>
   </details>
   <div class="chips" id="chips"></div>
 
-  <div class="els" id="els" role="group" aria-label="กรองตามธาตุ"></div>
-  <label class="only"><input type="checkbox" id="only"> แสดงเฉพาะทีมที่มีข้อมูลรูน</label>
+  <div class="els" id="els" role="group" aria-label="กรองทีมตามธาตุ"></div>
+  <div class="row-filters">
+    <div class="seg" id="dataSeg" role="group" aria-label="กรองตามข้อมูลรูน">
+      <button type="button" data-d="" aria-pressed="true">ทุกทีม</button>
+      <button type="button" data-d="with" aria-pressed="false">มีข้อมูลรูน</button>
+      <button type="button" data-d="without" aria-pressed="false">ยังไม่มีข้อมูล</button>
+    </div>
+    <select id="season" aria-label="ซีซั่น" hidden></select>
+  </div>
 
   <div class="cnt" id="cnt" aria-live="polite">กำลังโหลดข้อมูล…</div>
   <div id="list"></div>
 
-  <p class="note">ข้อมูลอันดับถอดจากภาพหน้าจอเว็บ SWLens ทีมโจมตีขาดอันดับ 68 และ 69 เพราะภาพไม่ครบ ธาตุกำหนดจากสีกรอบไอคอนโดยอัตโนมัติ อาจผิดได้บ้าง ข้อมูลทีมตีและรูนมาจากสมาชิกกิลด์ ตัดชื่อผู้เล่นออกทุกครั้ง ไอคอนมอนสเตอร์เป็นลิขสิทธิ์ของ Com2uS</p>
+  <p class="note">ข้อมูลอันดับและความนิยมถอดจากภาพหน้าจอเว็บ SWLens ทีมโจมตีขาดอันดับ 68 และ 69 เพราะภาพไม่ครบ ธาตุกำหนดจากสีกรอบไอคอนโดยอัตโนมัติ อาจผิดได้บ้าง ข้อมูลทีมตีและรูนมาจากสมาชิกกิลด์ ตัดชื่อผู้เล่นออกทุกครั้ง ไอคอนมอนสเตอร์เป็นลิขสิทธิ์ของ Com2uS</p>
 </main>
 
-<div id="lb" class="lb" role="dialog" aria-modal="true" aria-label="ภาพรูนขนาดใหญ่" hidden><img alt=""></div>
+<button type="button" id="toTop" class="to-top" aria-label="กลับขึ้นบนสุด" hidden>↑</button>
+<div id="lb" class="lb" role="dialog" aria-modal="true" aria-label="ภาพรูนขนาดใหญ่" hidden>
+  <button type="button" class="lb-close" aria-label="ปิด">✕</button>
+  <div class="lb-scroll"><img alt=""></div>
+  <p class="lb-hint">แตะรูปเพื่อซูม · แตะพื้นหลังหรือ ✕ เพื่อปิด</p>
+</div>
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script src="app.js?v=2" defer></script>
+<script src="app.js?v=3" defer></script>
+<!-- Cloudflare Web Analytics (ไม่ใช้คุกกี้) -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "9b18064985ae4c728ce87917ae65e707"}'></script>
 </body>
 </html>
