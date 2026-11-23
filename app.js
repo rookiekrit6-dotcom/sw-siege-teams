@@ -166,6 +166,10 @@
     const rk = other ? `${otherSide === "atk" ? "ทีมตีอันดับ" : "เด็คอันดับ"} ${other.rank}` : "";
     const atkSpd = t.side === "atk" && x.runes && x.runes.some((r) => r.spd)
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd != null ? "+" + r.spd : "-"}`).join(" · ")}</div>` : "";
+    const g = x.guide && x.guide.first && x.guide.first.length
+      ? `<div class="guide"><b>🎯 ตาแรกใช้สกิลอะไร</b> <small>(จาก ${x.guide.games} เกม)</small>${x.guide.first.map((f, i) =>
+          `<div class="g-row"><span class="g-n">${i + 1}</span><img src="${esc((MON[f.m] || {}).img || "")}" alt="" width="28" height="28"><span>${esc(monName(f.m))} ใช้ <b>S${f.s}</b>${f.t ? ` → ${esc(monName(f.t))}` : ""}</span></div>`).join("")}</div>`
+      : "";
     const runes = open
       ? (x.runes.some((r) => r.img) ? '<p class="hint tap">แตะรูปเพื่อขยาย</p>' : "") + `<div class="runes">${x.runes.map(runeCard).join("")}</div>`
       : "";
@@ -173,7 +177,7 @@
       <div class="mu-top"><div class="mons">${icons}</div>
         <div class="mu-meta"><span class="rkb">${rk}</span>${mine}${x.season ? `<span class="season">${esc(x.season)}</span>` : ""}${x.date ? `<span>ตีเมื่อ ${esc(thDate(x.date))}</span>` : ""}${isOld(x.date) ? OLD_TAG : ""}${isNew(x.added) && !isOld(x.date) ? '<span class="new">ใหม่</span>' : ""}
           <button type="button" class="run-btn" data-runes="${esc(rid)}" aria-expanded="${open}">${open ? "ซ่อนรูน" : "ดูรูนทีมตี"}</button></div></div>
-      ${atkSpd}${mySpd}${x.note ? `<div class="mu-line note-line">💬 ${esc(x.note)}</div>` : ""}
+      ${atkSpd}${mySpd}${g}${x.note ? `<div class="mu-line note-line">💬 ${esc(x.note)}</div>` : ""}
       ${runes}</div>`;
   }
 

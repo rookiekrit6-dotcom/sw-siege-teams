@@ -162,3 +162,8 @@ button.head[aria-expanded="true"] .rk::after{content:"▾"}
 .rc-st i{font-style:normal;font-weight:400;color:var(--mute);margin-right:3px}
 .rc-st span:first-child{color:var(--gold)}
 .rc-note{color:var(--mute);font-size:.68rem}
+.guide{margin:.5rem 0 .2rem;padding:.5rem .6rem;border-radius:10px;background:rgba(255,200,80,.08);border:1px solid rgba(255,200,80,.25);font-size:.9rem}
+.guide small{opacity:.7}
+.g-row{display:flex;align-items:center;gap:.45rem;margin-top:.35rem}
+.g-row img{border-radius:6px;width:28px;height:28px}
+.g-n{display:inline-grid;place-items:center;width:1.3rem;height:1.3rem;border-radius:50%;background:rgba(255,200,80,.3);font-size:.75rem;font-weight:700}

@@ -23,7 +23,7 @@ BKK = datetime.timezone(datetime.timedelta(hours=7))
 def blocks(text):
     for b in re.split(r"\nAPI Command: ", "\n" + text):
         name = b.split(" ", 1)[0].strip()
-        if not name.startswith("GetGuildTest"):
+        if not (name.startswith("GetGuildTest") or name == "GetGuildSiegeBattleReplayData"):
             continue
         i, j = b.find("Request:"), b.find("Response:")
         try:
@@ -79,6 +79,21 @@ def rune_summary(unit):
     return {"sets": [SET.get(s, str(s)) for s in full], "main": [mains.get(2, "-"), mains.get(4, "-"), mains.get(6, "-")], "st": st, "n": len(runes)}
 
 
+SKILL_NOTE = "ลำดับใน action_data: [ลำดับ, ชนิด, ตัวเรา(0-2), สกิล(0=S1), เป้า(0-2 ฝั่งเรา, 3-5 ฝั่งศัตรู), ?, สุ่ม]"
+
+
+def first_moves(j, atk_keys, def_keys):
+    """ตาแรกของทีมตีแต่ละตัว: สกิลที่กด + เป้า (เฉพาะเมื่อเล็งศัตรู) เรียงตามลำดับที่ได้เล่น"""
+    seen, out = set(), []
+    for a in j.get("action_data") or []:
+        if len(a) < 5 or a[1] != 0 or not (0 <= a[2] < 3) or a[2] in seen:
+            continue
+        seen.add(a[2])
+        t = def_keys[a[4] - 3] if 3 <= a[4] < 6 else None
+        out.append({"m": atk_keys[a[2]], "s": a[3] + 1, "t": t})
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("logs", nargs="+")
@@ -104,9 +119,11 @@ def main():
                         "atk": bi["unit_list"][0], "def": bi["opp_unit_list"][0],
                         "date": datetime.datetime.fromtimestamp(bi.get("end_time") or rp.get("battle_key") or 0, BKK).date().isoformat(),
                     }
-            elif name == "GetGuildTestReplayData":
-                ref = req.get("replay_info_ref")
-                for rd in resp.get("replay_data") or []:
+            elif name in ("GetGuildTestReplayData", "GetGuildSiegeBattleReplayData"):
+                siege = name == "GetGuildSiegeBattleReplayData"
+                ref = ("s%s" % req.get("replay_rid_ref")) if siege else req.get("replay_info_ref")
+                raw = resp.get("replay_data")
+                for rd in ([{"data": raw}] if isinstance(raw, str) else raw or []):
                     try:
                         j = json.loads(zlib.decompress(base64.b64decode(rd["data"])))
                     except Exception:
@@ -119,12 +136,16 @@ def main():
                     if ref not in replays and len(users) > 1:
                         dunits = [u["unit"]["unit_master_id"] for u in sorted(users[1].get("battle_units") or [], key=lambda u: u.get("pos_id", 0))]
                         replays[ref] = {"atk": [m for m, _ in runes[ref]], "def": dunits, "date": None}
+                    if siege:
+                        win = (j.get("win_lose_data") or j.get("win_lose"))
+                        replays[ref].update(siege=True, win=win, j=j,
+                                            date=datetime.datetime.fromtimestamp(resp.get("tvalue") or 0, BKK).date().isoformat())
     data = json.load(open(os.path.join(D, "matchups.json"), encoding="utf-8"))
     have = {x.get("ref") for x in data["matchups"] if x.get("ref")}
     n = 1 + max([int(x["id"][1:]) for x in data["matchups"] if x["id"][1:].isdigit()] or [0])
     today = datetime.date.today().isoformat()
     missing, added, skipped = set(), 0, 0
-    for ref, rp in sorted(replays.items()):
+    for ref, rp in sorted(replays.items(), key=lambda kv: str(kv[0])):
         if ref in have:
             continue
         if ref not in runes or len(runes[ref]) != 3:
@@ -140,12 +161,18 @@ def main():
             skipped += 1
             continue
         atk, dfn = keys[:3], keys[3:]
+        if rp.get("siege") and rp.get("win") != 1:
+            skipped += 1
+            continue
         summ = {by_fam[fam(mid)]: s for mid, s in runes[ref]}
-        data["matchups"].append({
+        mu = {
             "id": f"m{n}", "ref": ref, "src": "swex", "atk": atk, "def": dfn, "date": rp["date"], "added": today,
             "season": None, "note": "",
             "runes": [dict(m=k, spd=summ[k]["st"]["spd"], rs=summ[k]) for k in atk],
-        })
+        }
+        if rp.get("siege"):
+            mu["guide"] = {"games": 1, "first": first_moves(rp["j"], atk, dfn)}
+        data["matchups"].append(mu)
         n += 1; added += 1
     print(f"รีเพลย์ {len(replays)} · มีรูนทีมตี {len(runes)} · เพิ่มใหม่ {added} · ข้าม {skipped}")
     if missing:
