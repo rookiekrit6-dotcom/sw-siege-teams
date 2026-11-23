@@ -16,7 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap">
-<link rel="stylesheet" href="style.css?v=20261123160622">
+<link rel="stylesheet" href="style.css?v=20261123164919">
 </head>
 <body>
 <main id="top">
@@ -25,8 +25,22 @@
       <h1>ทีมสงครามแห่งการยึดครอง</h1>
       <p class="sub">กดเด็คเพื่อดูทีมที่ตีชนะและรูน <span id="updated"></span></p>
     </div>
-    <a class="submit" href="https://docs.google.com/forms/d/e/1FAIpQLSc1rqq_RnKAq3Cj2cuzaY803iS1UplVPSjjcH0cPlXlvbo0Ig/viewform" target="_blank" rel="noopener">📤 ส่งข้อมูล</a>
+    <div class="hdr-btns">
+      <button type="button" id="boxBtn" class="box-btn" aria-expanded="false" aria-controls="box">📂 กล่องฉัน</button>
+      <a class="submit" href="https://docs.google.com/forms/d/e/1FAIpQLSc1rqq_RnKAq3Cj2cuzaY803iS1UplVPSjjcH0cPlXlvbo0Ig/viewform" target="_blank" rel="noopener">📤 ส่งข้อมูล</a>
+    </div>
   </header>
+
+  <section class="box" id="box" hidden aria-label="กล่องมอนของฉัน">
+    <div class="box-head"><b>📂 กล่องมอนของฉัน</b><button type="button" id="boxClose" class="link-btn" aria-label="ปิด">✕</button></div>
+    <p>โหลดไฟล์ JSON จากโปรแกรม SWEX แล้วเว็บจะบอกว่าทีมตีไหนคุณมีมอนครบ และ SPD จากรูนของคุณพอหรือยัง</p>
+    <p class="hint">🔒 ไฟล์อ่านในเครื่องคุณเท่านั้น ไม่ได้ส่งขึ้นเว็บ เว็บจำไว้แค่รายชื่อมอนกับ SPD</p>
+    <div class="box-row">
+      <label class="results-btn file-btn">เลือกไฟล์ SWEX (.json)<input type="file" id="boxFile" accept=".json,application/json" hidden></label>
+    </div>
+    <p class="box-status"><span id="boxStatus"></span> <button type="button" id="boxClear" class="link-btn" hidden>ลบข้อมูล</button></p>
+    <p class="hint"><a href="guide.html">วิธีทำไฟล์ SWEX</a> · SPD คำนวณจากรูน อาจคลาดจากในเกม ±1 · ถ้าเปิดในไลน์แล้วเลือกไฟล์ไม่ได้ ให้เปิดใน Chrome</p>
+  </section>
 
   <div class="sticky">
     <div class="tabs" id="tabs" role="group" aria-label="โหมด">
@@ -60,6 +74,7 @@
       <button type="button" data-d="" aria-pressed="true">ทุกทีม</button>
       <button type="button" data-d="with" aria-pressed="false">มีข้อมูลรูน</button>
       <button type="button" data-d="without" aria-pressed="false">ยังไม่มี</button>
+      <button type="button" data-d="mine" aria-pressed="false" hidden>ฉันมีครบ</button>
     </div>
     <select id="season" aria-label="ซีซั่น" hidden></select>
   </div>
@@ -78,8 +93,8 @@
 </div>
 <div id="toast" class="toast" role="status" hidden></div>
 
-<script>window.APP_V = "20261123160622"; window.GC_CODE = ""; /* รหัส GoatCounter เช่น "swsiege" (ว่าง = ไม่นับ) */</script>
-<script src="app.js?v=20261123160622" defer></script>
+<script>window.APP_V = "20261123164919"; window.GC_CODE = ""; /* รหัส GoatCounter เช่น "swsiege" (ว่าง = ไม่นับ) */</script>
+<script src="app.js?v=20261123164919" defer></script>
 <!-- Cloudflare Web Analytics (ไม่ใช้คุกกี้) -->
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "9b18064985ae4c728ce87917ae65e707"}'></script>
 </body>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>วิธีทำไฟล์ SWEX · ทีมสงครามแห่งการยึดครอง</title>
+<meta name="theme-color" content="#2f6b66">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap">
+<link rel="stylesheet" href="style.css?v=20261123164919">
+<style>
+  .guide h2{font-size:1.05rem;margin:18px 0 6px}
+  .guide ol,.guide ul{padding-left:1.3em;margin:6px 0}
+  .guide li{margin:6px 0;line-height:1.6}
+  .guide p{line-height:1.6}
+  .guide a{color:var(--accent)}
+  .guide code{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+  .guide .warn{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--gold);border-radius:6px;padding:8px 12px}
+</style>
+</head>
+<body>
+<main class="guide">
+  <p><a href="./">← กลับหน้าทีม</a></p>
+  <h1>วิธีทำไฟล์ SWEX</h1>
+  <p class="sub">ใช้กับปุ่ม 📂 กล่องฉัน เพื่อดูว่าทีมตีไหนคุณมีมอนครบ และ SPD พอหรือยัง</p>
+
+  <h2>ไฟล์นี้คืออะไร</h2>
+  <p>SWEX (Summoners War Exporter) เป็นโปรแกรมฟรีบนคอม ทำงานตอนคุณล็อกอินเกม แล้วบันทึกข้อมูลมอนและรูนของไอดีคุณเป็นไฟล์ <code>.json</code> ไฟล์เดียวกันนี้ใช้กับเว็บจัดรูนอย่าง SWOP และ SWGT ได้ด้วย</p>
+
+  <h2>ต้องมี</h2>
+  <ul>
+    <li>คอม Windows หรือ Mac</li>
+    <li>เกม Summoners War ที่เล่นผ่านคอมได้ (เวอร์ชัน PC หรืออีมูเลเตอร์) หรือมือถือที่ต่อผ่านคอม</li>
+  </ul>
+
+  <h2>ขั้นตอน</h2>
+  <ol>
+    <li>ดาวน์โหลด SWEX จากหน้าทางการ <a href="https://github.com/Xzandro/sw-exporter/releases/latest" target="_blank" rel="noopener">github.com/Xzandro/sw-exporter</a> บน Windows เลือกตัว <b>Portable</b> เปิดได้เลยไม่ต้องติดตั้ง</li>
+    <li>เปิดโปรแกรม แล้วกด <b>Start Proxy</b></li>
+    <li>ตั้งให้เกมวิ่งผ่าน Proxy ของ SWEX วิธีต่างกันตามที่คุณเล่น (PC, อีมูเลเตอร์ หรือมือถือ) ดูได้ในหัวข้อ <b>Help</b> ในโปรแกรม SWEX</li>
+    <li>เข้าเกมแล้วล็อกอินไอดีตามปกติ</li>
+    <li>SWEX จะบันทึกไฟล์ชื่อแบบ <code>ชื่อไอดี-ตัวเลข.json</code> ไว้ในโฟลเดอร์ที่ตั้งในหน้า Settings ของโปรแกรม</li>
+    <li>กลับมาที่เว็บนี้ กด <b>📂 กล่องฉัน</b> → <b>เลือกไฟล์ SWEX</b> → เลือกไฟล์นั้น</li>
+  </ol>
+
+  <h2>ใช้บนมือถือ</h2>
+  <ul>
+    <li>ส่งไฟล์เข้ามือถือ เช่นผ่าน LINE Keep หรือ Google Drive</li>
+    <li>เปิดเว็บใน <b>Chrome</b> แล้วเลือกไฟล์ (เบราว์เซอร์ในไลน์บางเครื่องเลือกไฟล์ไม่ได้)</li>
+    <li>โหลดครั้งเดียว เว็บจำไว้ในเครื่อง เปลี่ยนรูนแล้วค่อยทำไฟล์ใหม่มาโหลดทับ</li>
+  </ul>
+
+  <h2>ความปลอดภัย</h2>
+  <div class="warn">
+    <ul>
+      <li>เว็บนี้อ่านไฟล์ในเครื่องคุณเท่านั้น <b>ไม่ได้ส่งไฟล์ขึ้นเว็บ</b> และจำไว้แค่รายชื่อมอนกับค่า SPD จากรูน</li>
+      <li>ไฟล์มีข้อมูลทั้งไอดี อย่าโพสต์ลงกลุ่ม หรือส่งให้คนที่ไม่รู้จัก</li>
+      <li>ไม่ต้องให้รหัสผ่านเกมกับใครเพื่อทำไฟล์นี้</li>
+    </ul>
+  </div>
+
+  <h2>เรื่องตัวเลข SPD</h2>
+  <p>"คุณ +185" คือ SPD ที่ได้จากรูน (ค่า SPD ทุกจุด + ชุดสวิฟท์) เทียบกับเลข SPD+ ของทีมที่ตีชนะ อาจคลาดจากในเกม ±1 และไม่รวมบัฟลีดเดอร์</p>
+  <p><a href="./">← กลับหน้าทีม</a></p>
+</main>
+</body>
+</html>

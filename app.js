@@ -14,6 +14,7 @@
   /* ---------- helpers ---------- */
   const keyOf = (ms) => [...ms].sort().join("|");
   const monName = (k) => (MON[k] ? MON[k].n : k);
+  const monMatch = (k, q) => monName(k).toLowerCase().includes(q) || (MON[k] && MON[k].en ? MON[k].en.toLowerCase().includes(q) : false);
   const monColor = (k) => (MON[k] && EL[MON[k].el] ? `var(${EL[MON[k].el][1]})` : "var(--line)");
   const bkk = (iso) => new Date(iso + "T00:00:00+07:00").getTime();
   const isOld = (iso) => !!iso && (Date.now() - bkk(iso)) / 864e5 > OLD_DAYS;
@@ -23,11 +24,11 @@
     try { return new Date(bkk(iso)).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "2-digit", timeZone: "Asia/Bangkok" }); }
     catch (e) { return iso; }
   };
-  const monHTML = (k, extra) => {
+  const monHTML = (k, extra, extraHtml) => {
     const m = MON[k];
     const nm = monName(k), sp = nm.match(/^(.+?)\s*(\(.+\))$/);
     const label = sp ? `${esc(sp[1])}<small>${esc(sp[2])}</small>` : esc(nm);
-    return `<span class="m" style="--c:${monColor(k)}" title="${esc(nm)}"><img src="${esc(m ? m.img : "")}" alt="" width="52" height="52" loading="lazy" decoding="async">${label}${extra ? `<b class="spd-tag">${esc(extra)}</b>` : ""}</span>`;
+    return `<span class="m" style="--c:${monColor(k)}" title="${esc(nm)}"><img src="${esc(m ? m.img : "")}" alt="" width="52" height="52" loading="lazy" decoding="async">${label}${extra ? `<b class="spd-tag">${esc(extra)}</b>` : ""}${extraHtml || ""}</span>`;
   };
 
   /* ---------- สถิติการใช้งาน (GoatCounter) ----------
@@ -37,6 +38,61 @@
     try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: path.slice(0, 200), title: title || path, event: true }); } catch (e) {}
   }
   const teamLabel = (t) => t.m.map(monName).join(" · ");
+
+  /* ---------- กล่องมอนของฉัน (ไฟล์ SWEX) ----------
+     อ่านไฟล์ในเบราว์เซอร์เท่านั้น ไม่อัปโหลด เก็บไว้ในเครื่องแค่ "มีมอนตัวไหน + SPD จากรูน" */
+  const BOX_KEY = "mybox.v1";
+  let BOX = null; // { name, at, n, u: { "<family>-<element>": spdBonus } }
+  try { BOX = JSON.parse(localStorage.getItem(BOX_KEY) || "null"); } catch (e) { BOX = null; }
+  const famKey = (id) => (id >= 1000000 ? `h${Math.floor(id / 100)}-${id % 10}` : `${Math.floor(id / 100)}-${id % 10}`);
+  const boxSpd = (k) => (BOX && MON[k] && MON[k].id ? BOX.u[famKey(MON[k].id)] : undefined);
+  const boxHas = (k) => boxSpd(k) !== undefined;
+  const ownsAll = (team) => !!BOX && team.every(boxHas);
+
+  // SPD ที่บวกจากรูน = ค่า SPD แบนทุกจุด (หลัก/รอง/ย่อย+เจียร) + ชุดสวิฟท์ 25% ของสปีดฐาน
+  function runeSpd(u) {
+    const runes = Array.isArray(u.runes) ? u.runes : Object.values(u.runes || {});
+    let flat = 0, swift = 0, intangible = 0;
+    for (const r of runes) {
+      if (!r) continue;
+      if (r.set_id === 3) swift++;
+      if (r.set_id === 25) intangible++;
+      if (r.pri_eff && r.pri_eff[0] === 8) flat += +r.pri_eff[1] || 0;
+      if (r.prefix_eff && r.prefix_eff[0] === 8) flat += +r.prefix_eff[1] || 0;
+      for (const sx of r.sec_eff || []) if (sx && sx[0] === 8) flat += (+sx[1] || 0) + (+sx[3] || 0);
+    }
+    const hasSwift = swift >= 4 || (swift === 3 && intangible > 0);
+    return flat + (hasSwift ? Math.ceil((+u.spd || 0) * 0.25) : 0);
+  }
+  function parseSwex(data) {
+    if (!data || !Array.isArray(data.unit_list)) throw new Error("ไม่ใช่ไฟล์ SWEX (ไม่พบรายชื่อมอน unit_list)");
+    const units = [...data.unit_list, ...(Array.isArray(data.unit_storage_list) ? data.unit_storage_list : [])];
+    const u = {};
+    let n = 0;
+    for (const x of units) {
+      const id = +x.unit_master_id;
+      if (!id) continue;
+      const aw = Math.floor(id / 10) % 10;
+      if (id < 1000000 && aw === 0) continue; // ยังไม่ปลุก ไม่นับ
+      const key = famKey(id), sp = runeSpd(x);
+      if (!(key in u) || sp > u[key]) u[key] = sp;
+      n++;
+    }
+    if (!n) throw new Error("ไม่พบมอนที่ปลุกแล้วในไฟล์");
+    const w = data.wizard_info || {};
+    return { name: String(w.wizard_name || "").slice(0, 40), at: new Date().toISOString().slice(0, 10), n, u };
+  }
+  function saveBox(b) { BOX = b; try { b ? localStorage.setItem(BOX_KEY, JSON.stringify(b)) : localStorage.removeItem(BOX_KEY); } catch (e) {} }
+
+  // ป้ายเทียบ SPD ใต้ไอคอนทีมตี
+  function boxTag(k, need) {
+    if (!BOX) return "";
+    const mine = boxSpd(k);
+    if (mine === undefined) return '<b class="my-tag no">ไม่มี</b>';
+    if (need == null) return `<b class="my-tag ok">คุณ +${mine}</b>`;
+    const gap = need - mine;
+    return gap <= 0 ? `<b class="my-tag ok">คุณ +${mine}</b>` : `<b class="my-tag low">คุณ +${mine}<br>ขาด ${gap}</b>`;
+  }
 
   /* ---------- data model ---------- */
   function build(monsters, ranked, mu) {
@@ -85,9 +141,10 @@
     const mus = musFor(t);
     if (state.data === "with" && !mus.length) return false;
     if (state.data === "without" && t.mus.length) return false;
+    if (state.data === "mine" && !(BOX && (t.side === "atk" ? mus.length && ownsAll(t.m) : mus.some((x) => ownsAll(x.atk))))) return false;
     if (state.season && !mus.length) return false;
     if (state.el && !t.m.some((k) => MON[k] && MON[k].el === state.el)) return false;
-    if (state.q && !t.m.some((k) => monName(k).toLowerCase().includes(state.q))) return false;
+    if (state.q && !t.m.some((k) => monMatch(k, state.q))) return false;
     if (!ignorePick && state.pick.length && !state.pick.every((k) => t.m.includes(k))) return false;
     return true;
   }
@@ -100,7 +157,10 @@
     const rid = `${t.id}:${x.id}`;
     const open = state.runesOpen.has(rid);
     const spdOf = Object.fromEntries((x.runes || []).map((r) => [r.m, r.spd]));
-    const icons = x[otherSide].map((k) => monHTML(k, otherSide === "atk" && spdOf[k] ? `SPD +${spdOf[k]}` : "")).join("");
+    const icons = x[otherSide].map((k) => monHTML(k, otherSide === "atk" && spdOf[k] ? `SPD +${spdOf[k]}` : "", otherSide === "atk" ? boxTag(k, spdOf[k]) : "")).join("");
+    const miss = BOX ? x.atk.filter((k) => !boxHas(k)) : [];
+    const mine = BOX ? (miss.length ? `<span class="my-sum no">ขาด ${miss.length} ตัว</span>` : '<span class="my-sum ok">✓ มีครบ</span>') : "";
+    const mySpd = BOX && t.side === "atk" ? `<div class="mu-line">ของคุณ: ${x.atk.map((k) => { const v = boxSpd(k); return `${esc(monName(k))} ${v === undefined ? "ไม่มี" : "+" + v}`; }).join(" · ")}</div>` : "";
     const rk = other ? `${otherSide === "atk" ? "ทีมตีอันดับ" : "เด็คอันดับ"} ${other.rank}` : "";
     const atkSpd = t.side === "atk" && x.runes && x.runes.some((r) => r.spd)
       ? `<div class="mu-line">SPD ทีมตี: ${x.runes.map((r) => `${esc(monName(r.m))} ${r.spd != null ? "+" + r.spd : "-"}`).join(" · ")}</div>` : "";
@@ -109,9 +169,9 @@
       : "";
     return `<div class="mu">
       <div class="mu-top"><div class="mons">${icons}</div>
-        <div class="mu-meta"><span class="rkb">${rk}</span>${x.season ? `<span class="season">${esc(x.season)}</span>` : ""}${x.date ? `<span>ตีเมื่อ ${esc(thDate(x.date))}</span>` : ""}${isOld(x.date) ? OLD_TAG : ""}${isNew(x.added) && !isOld(x.date) ? '<span class="new">ใหม่</span>' : ""}
+        <div class="mu-meta"><span class="rkb">${rk}</span>${mine}${x.season ? `<span class="season">${esc(x.season)}</span>` : ""}${x.date ? `<span>ตีเมื่อ ${esc(thDate(x.date))}</span>` : ""}${isOld(x.date) ? OLD_TAG : ""}${isNew(x.added) && !isOld(x.date) ? '<span class="new">ใหม่</span>' : ""}
           <button type="button" class="run-btn" data-runes="${esc(rid)}" aria-expanded="${open}">${open ? "ซ่อนรูน" : "ดูรูนทีมตี"}</button></div></div>
-      ${atkSpd}${x.note ? `<div class="mu-line note-line">💬 ${esc(x.note)}</div>` : ""}
+      ${atkSpd}${mySpd}${x.note ? `<div class="mu-line note-line">💬 ${esc(x.note)}</div>` : ""}
       ${runes}</div>`;
   }
 
@@ -134,10 +194,15 @@
       ${open ? `<div class="det" id="det-${esc(t.id)}"><p class="nodata">${msg} ถ้าเคยตีชนะ ส่งภาพหน้าจอมาได้เลย</p>
         <div class="det-foot"><a class="link-btn" href="${FORM_URL}" target="_blank" rel="noopener">📤 ส่งข้อมูลทีมนี้</a><button type="button" class="link-btn" data-share="${esc(t.id)}">🔗 คัดลอกลิงก์</button></div></div>` : ""}</article>`;
     }
-    const label = t.side === "atk" ? `ตีได้ ${mus.length} ทีม` : `มีทีมแก้ ${mus.length} ทีม`;
+    let label = t.side === "atk" ? `ตีได้ ${mus.length} ทีม` : `มีทีมแก้ ${mus.length} ทีม`;
+    let myBadge = "";
+    if (BOX) {
+      const can = t.side === "atk" ? (ownsAll(t.m) ? 1 : 0) : mus.filter((x) => ownsAll(x.atk)).length;
+      if (can) myBadge = `<span class="my-sum ok">${t.side === "atk" ? "✓ คุณมีครบ" : `คุณทำได้ ${can}`}</span>`;
+    }
     return `<article class="team has" id="t-${esc(t.id)}">
       <button type="button" class="head" data-team="${esc(t.id)}" aria-expanded="${open}" aria-controls="det-${esc(t.id)}">${rk}${mons}
-        <span class="badges"><span class="tag">${label}</span></span></button>
+        <span class="badges"><span class="tag">${label}</span>${myBadge}</span></button>
       ${open ? detailHTML(t) : ""}</article>`;
   }
 
@@ -228,7 +293,7 @@
   }
   function renderPicker() {
     const pq = state.pq, pel = state.pel;
-    const list = pickCandidates().filter((k) => state.pick.includes(k) || ((!pq || monName(k).toLowerCase().includes(pq)) && (!pel || (MON[k] && MON[k].el === pel))));
+    const list = pickCandidates().filter((k) => state.pick.includes(k) || ((!pq || monMatch(k, pq)) && (!pel || (MON[k] && MON[k].el === pel))));
     $("#pickGrid").innerHTML = list
       .map((k) => `<button type="button" data-pick="${esc(k)}" aria-pressed="${state.pick.includes(k)}" style="--c:${monColor(k)}"><img src="${esc(MON[k].img)}" alt="" width="44" height="44" loading="lazy" decoding="async">${esc(monName(k))}</button>`)
       .join("") || '<div class="hint">ไม่พบมอนที่ตรงกับตัวกรอง</div>';
@@ -363,6 +428,48 @@
       requestAnimationFrame(() => { top.hidden = window.scrollY < 900; ticking = false; });
     }, { passive: true });
     window.addEventListener("hashchange", openFromHash);
+    bindBox();
+  }
+
+  function renderBox() {
+    const st = $("#boxStatus"), clr = $("#boxClear"), btn = $("#boxBtn");
+    const mineBtn = document.querySelector('#dataSeg button[data-d="mine"]');
+    if (BOX) {
+      st.textContent = `${BOX.name ? BOX.name + " · " : ""}มอน ${BOX.n} ตัว · โหลดเมื่อ ${thDate(BOX.at)}`;
+      clr.hidden = false; btn.classList.add("on"); mineBtn.hidden = false;
+    } else {
+      st.textContent = "ยังไม่ได้โหลดไฟล์";
+      clr.hidden = true; btn.classList.remove("on"); mineBtn.hidden = true;
+      if (state.data === "mine") { state.data = ""; setPressed("#dataSeg button", "d", ""); }
+    }
+  }
+  function bindBox() {
+    const panel = $("#box"), btn = $("#boxBtn");
+    const setOpen = (o) => { panel.hidden = !o; btn.setAttribute("aria-expanded", String(o)); };
+    btn.addEventListener("click", () => setOpen(panel.hidden));
+    $("#boxClose").addEventListener("click", () => setOpen(false));
+    $("#boxFile").addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (!f) return;
+      $("#boxStatus").textContent = "กำลังอ่านไฟล์…";
+      const rd = new FileReader();
+      rd.onerror = () => { toast("อ่านไฟล์ไม่ได้"); renderBox(); };
+      rd.onload = () => {
+        try {
+          saveBox(parseSwex(JSON.parse(rd.result)));
+          renderBox(); render(); setOpen(false);
+          toast(`โหลดกล่องมอนแล้ว ${BOX.n} ตัว`);
+          track("โหลดกล่องมอน");
+        } catch (err) {
+          renderBox();
+          $("#boxStatus").textContent = "โหลดไม่สำเร็จ: " + (err instanceof SyntaxError ? "ไฟล์ไม่ใช่ JSON" : err.message);
+        }
+      };
+      rd.readAsText(f);
+    });
+    $("#boxClear").addEventListener("click", () => { saveBox(null); renderBox(); render(); toast("ลบข้อมูลกล่องมอนแล้ว"); });
+    renderBox();
   }
 
   async function load() {
